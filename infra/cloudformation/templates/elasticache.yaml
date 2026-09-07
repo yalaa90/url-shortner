@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - Elasticache Redis replication group, subnet group and security group.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, staging, prod]
+  Project:
+    Type: String
+    Default: url-shortener
+  NodeType:
+    Type: String
+    Default: cache.t4g.micro
+  NumCacheClusters:
+    Type: Number
+    AllowedValues: [1, 2, 3, 5]
+    Default: 2
+  EngineVersion:
+    Type: String
+    Default: "7.1"
+  AllowedSecurityGroupIds:
+    Type: CommaDelimitedList
+
+Conditions:
+  FailoverEnabled: !Or
+    - !Equals [!Ref NumCacheClusters, 2]
+    - !Equals [!Ref NumCacheClusters, 3]
+    - !Equals [!Ref NumCacheClusters, 5]
+
+Resources:
+  CacheSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Subnets for the URL Shortener Redis cache
+      SubnetIds:
+        Fn::Split:
+          - ","
+          - Fn::ImportValue:
+              Fn::Sub: "${Project}-${Environment}-private-subnets"
+
+  CacheSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow access to Redis from EKS cluster
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${Project}-${Environment}-vpc-id"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 6379
+          ToPort: 6379
+          SourceSecurityGroupId: !Select [0, !Ref AllowedSecurityGroupIds]
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+
+  ReplicationGroup:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      ReplicationGroupId: !Sub "${Project}-${Environment}-redis"
+      ReplicationGroupDescription: URL Shortener Redis cache
+      Engine: redis
+      EngineVersion: !Ref EngineVersion
+      CacheNodeType: !Ref NodeType
+      Port: 6379
+      NumCacheClusters: !Ref NumCacheClusters
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      SecurityGroupIds:
+        - !GetAtt CacheSecurityGroup.GroupId
+      AutomaticFailoverEnabled: !If [FailoverEnabled, "true", !Ref "AWS::NoValue"]
+      MultiAZEnabled: !If [FailoverEnabled, "true", !Ref "AWS::NoValue"]
+      SnapshotRetentionLimit: 7
+      SnapshotWindow: 03:30-04:30
+      PreferredMaintenanceWindow: sun:05:00-sun:06:00
+      AutoMinorVersionUpgrade: true
+      AtRestEncryptionEnabled: true
+      TransitEncryptionEnabled: true
+
+Outputs:
+  PrimaryEndPointAddress:
+    Value: !GetAtt ReplicationGroup.PrimaryEndPoint.Address
+    Export: { Name: !Sub "${Project}-${Environment}-redis-endpoint" }
+  Port:
+    Value: 6379
+  SecurityGroupId:
+    Value: !GetAtt CacheSecurityGroup.GroupId

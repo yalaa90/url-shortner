@@ -1,0 +1,56 @@
+replicaCount: 2
+
+image:
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: sho.rt
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: sho-rt-tls
+      hosts:
+        - sho.rt
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+
+probes:
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 5
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

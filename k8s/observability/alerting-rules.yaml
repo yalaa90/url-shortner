@@ -1,0 +1,53 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: url-shortener-alerts
+  namespace: url-shortener
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: url-shortener-availability
+      rules:
+        - alert: UrlShortenerMicroserviceDown
+          expr: up == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Service {{ $labels.job }} is down"
+        - alert: HighErrorRate
+          expr: |
+            sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (service)
+            / clamp_min(sum(rate(http_server_requests_seconds_count[5m])) by (service), 1)
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Service {{ $labels.service }} has >5% 5xx errors"
+        - alert: HighLatencyP95
+          expr: |
+            histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (service, le))
+            > 1.5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Service {{ $labels.service }} p95 latency > 1.5s"
+        - alert: HPAAtMaxReplicas
+          expr: kube_horizontalpodautoscaler_status_current_replicas == kube_horizontalpodautoscaler_spec_max_replicas
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "HPA {{ $labels.horizontalpodautoscaler }} pegged at max replicas"
+        - alert: JvmHeapHigh
+          expr: |
+            sum(jvm_memory_used_bytes{area="heap"}) by (instance)
+            / sum(jvm_memory_max_bytes{area="heap"}) by (instance) > 0.85
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "JVM heap >85% on {{ $labels.instance }}"

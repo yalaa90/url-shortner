@@ -1,0 +1,119 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "shared-lib/**"
+      - "url-service/**"
+      - "api-gateway/**"
+      - "analytics-service/**"
+      - "user-service/**"
+      - "pom.xml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "shared-lib/**"
+      - "url-service/**"
+      - "api-gateway/**"
+      - "analytics-service/**"
+      - "user-service/**"
+      - "pom.xml"
+
+env:
+  MAVEN_OPTS: "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"
+
+jobs:
+  build-and-test:
+    name: Build & test (Java 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Compile + unit tests
+        run: mvn -B -ntp verify -DskipITs
+
+      - name: Cache Rust-free test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surefire-reports
+          path: '**/target/surefire-reports'
+          retention-days: 14
+
+  integration-tests:
+    name: Integration tests (Testcontainers)
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    services:
+      docker:
+        image: docker:27-dind
+        options: --privileged
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run integration tests
+        run: mvn -B -ntp verify -Pintegration-tests
+
+  publish:
+    name: Build images & push to ECR
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        service: [url-service, api-gateway, analytics-service, user-service]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::012345678901:role/github-actions-eks
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build image
+        run: mvn -B -ntp -pl ${{ matrix.service }} -am package -DskipTests
+        working-directory: ${{ github.workspace }}
+
+      - name: Docker build -> ECR
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE="$REGISTRY/url-shortener/${{ matrix.service }}"
+          docker build -f Dockerfile -t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:latest" .
+          docker push "$IMAGE:$IMAGE_TAG"
+          docker push "$IMAGE:latest"
+        working-directory: ${{ matrix.service }}
+
+      - name: Trigger ArgoCD image sync
+        run: |
+          curl -fsS -X PATCH "https://argocd.sho.rt/api/v1/applications/${{ matrix.service }}" \
+            -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+            -d "{\"metadata\":{\"annotations\":{\"argocd-image-updater.argoproj.io/image-update\":\"true\"}}}" || true

@@ -1,0 +1,8 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+@use '@angular/material/core/theming/theming' as theming;
+$primary: map.merge(mat.$indigo-palette, (default: #3f51b5));
+$accent: map.merge(mat.$blue-palette, (default: #2196f3));
+$warn: map.merge(mat.$red-palette, (default: #f44336));
+$light-theme: mat.define-light-theme((color: (primary: $primary, accent: $accent, warn: $warn)));
+html { @include mat.core(); @include mat.all-component-themes($light-theme); }

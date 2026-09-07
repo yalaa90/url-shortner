@@ -1,0 +1,62 @@
+[
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "EnableNatGateway",
+    "ParameterValue": "true"
+  },
+  {
+    "ParameterKey": "EksInstanceType",
+    "ParameterValue": "t3.medium"
+  },
+  {
+    "ParameterKey": "GeneralDesiredSize",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "GeneralMinSize",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "GeneralMaxSize",
+    "ParameterValue": "3"
+  },
+  {
+    "ParameterKey": "SpotMinSize",
+    "ParameterValue": "0"
+  },
+  {
+    "ParameterKey": "SpotDesiredSize",
+    "ParameterValue": "0"
+  },
+  {
+    "ParameterKey": "SpotMaxSize",
+    "ParameterValue": "3"
+  },
+  {
+    "ParameterKey": "NodeDiskSize",
+    "ParameterValue": "40"
+  },
+  {
+    "ParameterKey": "RdsInstanceClass",
+    "ParameterValue": "db.t4g.small"
+  },
+  {
+    "ParameterKey": "RdsAllocatedStorage",
+    "ParameterValue": "20"
+  },
+  {
+    "ParameterKey": "RedisNodeType",
+    "ParameterValue": "cache.t3.micro"
+  },
+  {
+    "ParameterKey": "RedisNumCacheNodes",
+    "ParameterValue": "1"
+  },
+  {
+    "ParameterKey": "SqsVisibilityTimeout",
+    "ParameterValue": "60"
+  }
+]

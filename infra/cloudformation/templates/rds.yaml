@@ -1,0 +1,134 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - RDS PostgreSQL instance, security group, monitoring role and credentials secret.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, staging, prod]
+  Project:
+    Type: String
+    Default: url-shortener
+  InstanceClass:
+    Type: String
+    Default: db.r6g.large
+  AllocatedStorage:
+    Type: Number
+    Default: 50
+  EngineVersion:
+    Type: String
+    Default: "16.3"
+  MasterUsername:
+    Type: String
+    Default: urlshortener
+  MasterPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    MaxLength: 128
+  MultiAz:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+  DeletionProtection:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+  AllowedSecurityGroupIds:
+    Type: CommaDelimitedList
+
+Resources:
+  DbSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets for the URL Shortener PostgreSQL instance
+      SubnetIds:
+        Fn::Split:
+          - ","
+          - Fn::ImportValue:
+              Fn::Sub: "${Project}-${Environment}-database-subnets"
+      Tags:
+        - Key: Name
+          Value: !Sub "${Project}-${Environment}-postgres-subnet-group"
+
+  DbSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow access to PostgreSQL from EKS cluster
+      VpcId:
+        Fn::ImportValue:
+          Fn::Sub: "${Project}-${Environment}-vpc-id"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Select [0, !Ref AllowedSecurityGroupIds]
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+
+  MonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: monitoring.rds.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole
+
+  Credentials:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub "${Project}-${Environment}-postgres-credentials"
+      Description: RDS PostgreSQL credentials for the URL Shortener platform
+      SecretString: !Sub '{"username":"${MasterUsername}","password":"${MasterPassword}"}'
+      Tags:
+        - Key: Name
+          Value: !Sub "${Project}-${Environment}-postgres-credentials"
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub "${Project}-${Environment}-postgres"
+      Engine: postgres
+      EngineVersion: !Ref EngineVersion
+      DBInstanceClass: !Ref InstanceClass
+      AllocatedStorage: !Ref AllocatedStorage
+      StorageType: gp3
+      MaxAllocatedStorage: 200
+      DBName: urlshortener
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Ref MasterPassword
+      DBSubnetGroupName: !Ref DbSubnetGroup
+      VPCSecurityGroups:
+        - !GetAtt DbSecurityGroup.GroupId
+      PubliclyAccessible: false
+      MultiAZ: !Ref MultiAz
+      BackupRetentionPeriod: 30
+      PreferredBackupWindow: 03:00-04:00
+      PreferredMaintenanceWindow: sun:04:00-sun:05:00
+      CopyTagsToSnapshot: true
+      DeletionProtection: !Ref DeletionProtection
+      MonitoringInterval: 60
+      MonitoringRoleArn: !GetAtt MonitoringRole.Arn
+      EnablePerformanceInsights: true
+      StorageEncrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${Project}-${Environment}-postgres"
+
+Outputs:
+  Endpoint:
+    Value: !GetAtt Database.Endpoint.Address
+    Export: { Name: !Sub "${Project}-${Environment}-postgres-endpoint" }
+  Port:
+    Value: !GetAtt Database.Endpoint.Port
+  DatabaseName:
+    Value: urlshortener
+  MasterUsername:
+    Value: !Ref MasterUsername
+  SecretArn:
+    Value: !Ref Credentials
+    Export: { Name: !Sub "${Project}-${Environment}-postgres-secret-arn" }

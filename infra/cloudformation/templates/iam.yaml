@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - IAM roles for in-cluster services signed with the EKS OIDC provider (IRSA).
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, staging, prod]
+  Project:
+    Type: String
+    Default: url-shortener
+  OidcProviderArn:
+    Type: String
+  SqsQueueArn:
+    Type: String
+
+Resources:
+  UrlServiceSqsPublisherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Project}-${Environment}-url-service-sqs-publisher"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !Ref OidcProviderArn
+            Condition:
+              StringEquals:
+                sts.amazonaws.com:aud: sts.amazonaws.com
+              StringLike:
+                sts.amazonaws.com:sub: system:serviceaccount:url-shortener:url-service
+      Policies:
+        - PolicyName: sqs-click-events-publish
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                Resource: !Ref SqsQueueArn
+
+  AnalyticsServiceSqsConsumerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Project}-${Environment}-analytics-service-sqs-consumer"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !Ref OidcProviderArn
+            Condition:
+              StringEquals:
+                sts.amazonaws.com:aud: sts.amazonaws.com
+              StringLike:
+                sts.amazonaws.com:sub: system:serviceaccount:url-shortener:analytics-service
+      Policies:
+        - PolicyName: sqs-click-events-consume
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                Resource: !Ref SqsQueueArn
+
+  SecretsReaderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Project}-${Environment}-secrets-reader"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRoleWithWebIdentity
+            Principal:
+              Federated: !Ref OidcProviderArn
+            Condition:
+              StringEquals:
+                sts.amazonaws.com:aud: sts.amazonaws.com
+              StringLike:
+                sts.amazonaws.com:sub: system:serviceaccount:url-shortener:*
+      Policies:
+        - PolicyName: read-app-secrets
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: "*"
+
+Outputs:
+  UrlServiceSqsPublisherRoleArn:
+    Value: !GetAtt UrlServiceSqsPublisherRole.Arn
+    Export: { Name: !Sub "${Project}-${Environment}-publisher-role-arn" }
+  AnalyticsServiceSqsConsumerRoleArn:
+    Value: !GetAtt AnalyticsServiceSqsConsumerRole.Arn
+    Export: { Name: !Sub "${Project}-${Environment}-consumer-role-arn" }
+  SecretsReaderRoleArn:
+    Value: !GetAtt SecretsReaderRole.Arn
+    Export: { Name: !Sub "${Project}-${Environment}-secrets-reader-role-arn" }

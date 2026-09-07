@@ -1,0 +1,66 @@
+replicaCount: 2
+
+image:
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/api-gateway
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api.sho.rt
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: api-sho-rt-tls
+      hosts:
+        - api.sho.rt
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1024Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+probes:
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 5
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /actuator/prometheus
+  prometheus.io/port: "8080"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+env:
+  SPRING_PROFILES_ACTIVE: prod
+  APP_CORS_ALLOWED_ORIGINS: https://sho.rt

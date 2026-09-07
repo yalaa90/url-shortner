@@ -1,0 +1,136 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - ECR repositories and lifecycle policies for the URL Shortener services.
+
+Parameters:
+  Project:
+    Type: String
+    Default: url-shortener
+
+Resources:
+  # ───────── Repositories ─────────
+  UrlServiceRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${Project}/url-service"
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration: { ScanOnPush: true }
+      EncryptionConfiguration: { EncryptionType: AES256 }
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 30 },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+
+  AnalyticsServiceRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${Project}/analytics-service"
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration: { ScanOnPush: true }
+      EncryptionConfiguration: { EncryptionType: AES256 }
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 30 },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+
+  UserServiceRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${Project}/user-service"
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration: { ScanOnPush: true }
+      EncryptionConfiguration: { EncryptionType: AES256 }
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 30 },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+
+  ApiGatewayRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${Project}/api-gateway"
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration: { ScanOnPush: true }
+      EncryptionConfiguration: { EncryptionType: AES256 }
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 30 },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+
+  FrontendRepo:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${Project}/frontend"
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration: { ScanOnPush: true }
+      EncryptionConfiguration: { EncryptionType: AES256 }
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 30 images",
+                "selection": { "tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 30 },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+
+Outputs:
+  UrlServiceRepositoryUri:
+    Value: !GetAtt UrlServiceRepo.RepositoryUri
+  AnalyticsServiceRepositoryUri:
+    Value: !GetAtt AnalyticsServiceRepo.RepositoryUri
+  UserServiceRepositoryUri:
+    Value: !GetAtt UserServiceRepo.RepositoryUri
+  ApiGatewayRepositoryUri:
+    Value: !GetAtt ApiGatewayRepo.RepositoryUri
+  FrontendRepositoryUri:
+    Value: !GetAtt FrontendRepo.RepositoryUri

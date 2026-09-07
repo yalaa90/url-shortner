@@ -1,0 +1,44 @@
+# Maven / Java
+**/target/
+*.flattened-pom.xml
+
+# Terraform (keep .terraform.lock.hcl committed)
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+override.tf
+
+# Helm
+*.tgz
+
+# Frontend (safety net; url-shortener-ui/.gitignore already covers)
+url-shortener-ui/node_modules/
+url-shortener-ui/dist/
+
+# IDEs / editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.iml
+.project
+.classpath
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets / local config
+.env
+*.env
+application-local*.yml
+application-secrets*.yml
+*.p12
+*.pem
+*.jks
+credentials

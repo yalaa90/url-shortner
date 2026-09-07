@@ -1,0 +1,235 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - EKS cluster, managed node groups, add-ons and IAM OIDC provider.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, staging, prod]
+  Project:
+    Type: String
+    Default: url-shortener
+  ClusterVersion:
+    Type: String
+    Default: "1.30"
+  PrivateSubnets:
+    Type: CommaDelimitedList
+  InstanceType:
+    Type: String
+    Default: m5.large
+  GeneralDesiredSize:
+    Type: Number
+    Default: 3
+  GeneralMinSize:
+    Type: Number
+    Default: 3
+  GeneralMaxSize:
+    Type: Number
+    Default: 12
+  SpotMinSize:
+    Type: Number
+    Default: 0
+  SpotDesiredSize:
+    Type: Number
+    Default: 0
+  SpotMaxSize:
+    Type: Number
+    Default: 10
+  NodeDiskSize:
+    Type: Number
+    Default: 100
+  OidcThumbprint1:
+    Type: String
+    AllowedPattern: "[0-9A-Fa-f]{40}"
+    ConstraintDescription: SHA1 thumbprint of the EKS OIDC root certificate
+    Default: D291EBCAFE2C42F2B827D7E0BF8EFC368128FD69
+
+Resources:
+  ClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: eks.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSVPCResourceController
+      Tags:
+        - Key: Name
+          Value: !Sub "${Project}-${Environment}-cluster-role"
+
+  ClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EKS cluster control-plane security group
+      VpcId:
+        Fn::ImportValue: !Sub "${Project}-${Environment}-vpc-id"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          CidrIp: 0.0.0.0/0
+
+  Cluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Sub "${Project}-${Environment}"
+      Version: !Ref ClusterVersion
+      RoleArn: !GetAtt ClusterRole.Arn
+      ResourcesVpcConfig:
+        SubnetIds: !Ref PrivateSubnets
+        SecurityGroupIds:
+          - !Ref ClusterSecurityGroup
+      Logging:
+        ClusterLogging:
+          EnabledTypes:
+            - Type: api
+            - Type: audit
+            - Type: authenticator
+            - Type: controllerManager
+            - Type: scheduler
+    DependsOn:
+      - ClusterSecurityGroup
+
+  # ───────── Add-ons (EKS managed) ─────────
+  VpcCniAddon:
+    Type: AWS::EKS::Addon
+    Properties:
+      ClusterName: !Ref Cluster
+      AddonName: vpc-cni
+    DependsOn: Cluster
+  CoreDnsAddon:
+    Type: AWS::EKS::Addon
+    Properties:
+      ClusterName: !Ref Cluster
+      AddonName: coredns
+    DependsOn: Cluster
+  KubeProxyAddon:
+    Type: AWS::EKS::Addon
+    Properties:
+      ClusterName: !Ref Cluster
+      AddonName: kube-proxy
+    DependsOn: Cluster
+  EbsCsiAddon:
+    Type: AWS::EKS::Addon
+    Properties:
+      ClusterName: !Ref Cluster
+      AddonName: aws-ebs-csi-driver
+    DependsOn: Cluster
+
+  # ───────── Node IAM role ─────────
+  NodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+      Tags:
+        - Key: Name
+          Value: !Sub "${Project}-${Environment}-node-role"
+
+  NodeLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: !Ref NodeDiskSize
+              VolumeType: gp3
+
+  GeneralNodeGroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Ref Cluster
+      NodegroupName: !Sub "${Project}-${Environment}-general"
+      NodeRole: !GetAtt NodeRole.Arn
+      Subnets: !Ref PrivateSubnets
+      InstanceTypes: [!Ref InstanceType]
+      CapacityType: ON_DEMAND
+      AmiType: AL2_x86_64
+      LaunchTemplate:
+        Id: !Ref NodeLaunchTemplate
+        Version: !GetAtt NodeLaunchTemplate.LatestVersionNumber
+      ScalingConfig:
+        DesiredSize: !Ref GeneralDesiredSize
+        MinSize: !Ref GeneralMinSize
+        MaxSize: !Ref GeneralMaxSize
+      UpdateConfig:
+        MaxUnavailable: 1
+      Labels:
+        pool: general
+    DependsOn: Cluster
+
+  SpotNodeGroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Ref Cluster
+      NodegroupName: !Sub "${Project}-${Environment}-spot"
+      NodeRole: !GetAtt NodeRole.Arn
+      Subnets: !Ref PrivateSubnets
+      InstanceTypes: [!Ref InstanceType]
+      CapacityType: SPOT
+      AmiType: AL2_x86_64
+      LaunchTemplate:
+        Id: !Ref NodeLaunchTemplate
+        Version: !GetAtt NodeLaunchTemplate.LatestVersionNumber
+      ScalingConfig:
+        DesiredSize: !Ref SpotDesiredSize
+        MinSize: !Ref SpotMinSize
+        MaxSize: !Ref SpotMaxSize
+      UpdateConfig:
+        MaxUnavailable: 1
+      Labels:
+        pool: spot
+    DependsOn: Cluster
+
+  NodeAccessEntry:
+    Type: AWS::EKS::AccessEntry
+    Properties:
+      ClusterName: !Ref Cluster
+      PrincipalArn: !GetAtt NodeRole.Arn
+      Type: EC2_LINUX
+    DependsOn: Cluster
+
+  # ───────── IAM OIDC provider for IRSA ─────────
+  OidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: !GetAtt Cluster.OpenIdConnectIssuerUrl
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - !Ref OidcThumbprint1
+
+Outputs:
+  ClusterName:
+    Value: !Ref Cluster
+    Export: { Name: !Sub "${Project}-${Environment}-cluster-name" }
+  ClusterEndpoint:
+    Value: !GetAtt Cluster.Endpoint
+  ClusterCertificateAuthorityData:
+    Value: !GetAtt Cluster.CertificateAuthorityData
+  ClusterSecurityGroupId:
+    Value: !Ref ClusterSecurityGroup
+    Export: { Name: !Sub "${Project}-${Environment}-cluster-security-group" }
+  OidcProviderArn:
+    Value: !Ref OidcProvider
+    Export: { Name: !Sub "${Project}-${Environment}-oidc-provider-arn" }
+  OpenIDConnectIssuerUrl:
+    Value: !GetAtt Cluster.OpenIdConnectIssuerUrl
+  NodeRoleArn:
+    Value: !GetAtt NodeRole.Arn

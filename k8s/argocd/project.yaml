@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: url-shortener
+  namespace: argocd
+spec:
+  description: URL Shortener applications
+  sourceRepos:
+    - "*"
+  destinations:
+    - namespace: url-shortener
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  sourceNamespaces:
+    - url-shortener
+  roles:
+    - name: read-only
+      description: Read-only access
+      policies:
+        - p, proj:url-shortener:read-only, applications, get, url-shortener/*, allow
+      groups: []
+  syncWindows:
+    - kind: allow
+      schedule: "* * * * *"
+      duration: 1h
+      applications: ["*"]

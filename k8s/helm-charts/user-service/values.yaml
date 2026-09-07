@@ -1,0 +1,54 @@
+replicaCount: 2
+
+image:
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/user-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8083
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 384Mi
+  limits:
+    cpu: "1"
+    memory: 768Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+probes:
+  liveness:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readiness:
+    initialDelaySeconds: 15
+    periodSeconds: 5
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /actuator/prometheus
+  prometheus.io/port: "8083"
+
+existingSecret: url-shortener-secrets
+
+config:
+  SPRING_PROFILES_ACTIVE: prod
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-rds.default.svc.cluster.local:5432/urlshortener
+  SPRING_DATASOURCE_USERNAME: urlshortener_app
+  APP_SECURITY_JWT_ISSUER: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_example
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

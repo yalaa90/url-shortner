@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: url-shortener-services
+  namespace: url-shortener
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - url-service
+          - analytics-service
+          - user-service
+          - api-gateway
+  namespaceSelector:
+    matchNames:
+      - url-shortener
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: 30s
+      honorLabels: true

@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.5</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.urlshortener</groupId>
+    <artifactId>url-shortener-parent</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>URL Shortener - Parent</name>
+    <description>Production-grade URL shortening service</description>
+
+    <modules>
+        <module>shared-lib</module>
+        <module>api-gateway</module>
+        <module>url-service</module>
+        <module>analytics-service</module>
+        <module>user-service</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <spring-cloud.version>2023.0.1</spring-cloud.version>
+        <spring-security.version>6.2.4</spring-security.version>
+
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+        <testcontainers.version>1.19.7</testcontainers.version>
+        <hutool.version>5.8.27</hutool.version>
+        <guava.version>33.1.0-jre</guava.version>
+        <bucket4j.version>8.7.0</bucket4j.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
+        <postgresql.version>42.7.3</postgresql.version>
+        <redisson.version>3.27.2</redisson.version>
+        <caffeine.version>3.1.8</caffeine.version>
+        <aws-sdk.version>2.25.31</aws-sdk.version>
+        <opentelemetry.version>1.36.0</opentelemetry.version>
+        <logstash-logback.version>7.4</logstash-logback.version>
+        <springdoc.version>2.4.0</springdoc.version>
+        <clickhouse.version>0.6.0</clickhouse.version>
+        <bouncy-castle.version>1.78.1</bouncy-castle.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.urlshortener</groupId>
+                <artifactId>shared-lib</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- Database -->
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+
+            <!-- Caching -->
+            <dependency>
+                <groupId>com.github.ben-manes.caffeine</groupId>
+                <artifactId>caffeine</artifactId>
+                <version>${caffeine.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+
+            <!-- AWS -->
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>sqs</artifactId>
+                <version>${aws-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>kms</artifactId>
+                <version>${aws-sdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>secretsmanager</artifactId>
+                <version>${aws-sdk.version}</version>
+            </dependency>
+
+            <!-- Resilience -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-spring-boot3</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-reactor</artifactId>
+                <version>${resilience4j.version}</version>
+            </dependency>
+
+            <!-- Rate Limiting -->
+            <dependency>
+                <groupId>com.bucket4j</groupId>
+                <artifactId>bucket4j-core</artifactId>
+                <version>${bucket4j.version}</version>
+            </dependency>
+
+            <!-- Mapping -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+
+            <!-- API Docs -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+
+            <!-- Observability -->
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-tracing-bridge-otel</artifactId>
+                <version>1.2.4</version>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-exporter-otlp</artifactId>
+                <version>${opentelemetry.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.logstash.logback</groupId>
+                <artifactId>logstash-logback-encoder</artifactId>
+                <version>${logstash-logback.version}</version>
+            </dependency>
+
+            <!-- ClickHouse -->
+            <dependency>
+                <groupId>com.clickhouse</groupId>
+                <artifactId>clickhouse-jdbc</artifactId>
+                <classifier>all</classifier>
+                <version>${clickhouse.version}</version>
+            </dependency>
+
+            <!-- Security -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bouncy-castle.version}</version>
+            </dependency>
+
+            <!-- Testing -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>localstack</artifactId>
+                <version>${testcontainers.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>${lombok-mapstruct-binding.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>${surefire.includePattern}</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.11</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>ci</id>
+            <properties>
+                <argLine>-Djacoco.skip=true</argLine>
+            </properties>
+        </profile>
+        <profile>
+            <id>integration-tests</id>
+            <properties>
+                <surefire.includePattern>**/*Test.java,**/*IT.java</surefire.includePattern>
+            </properties>
+        </profile>
+        <profile>
+            <id>unit-tests</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <surefire.includePattern>**/*Test.java</surefire.includePattern>
+            </properties>
+        </profile>
+    </profiles>
+</project>

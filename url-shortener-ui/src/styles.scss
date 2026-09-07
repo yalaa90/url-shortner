@@ -1,0 +1,86 @@
+@use 'sass:map';
+@use '@angular/material' as mat;
+
+$primary-palette: map.merge(mat.$indigo-palette, (default: #3f51b5));
+$accent-palette: map.merge(mat.$blue-palette, (default: #2196f3));
+$warn-palette: map.merge(mat.$red-palette, (default: #f44336));
+
+$light-theme: mat.define-light-theme(
+  (
+    color: (
+      primary: $primary-palette,
+      accent: $accent-palette,
+      warn: $warn-palette,
+    ),
+    typography: mat.define-typography-config(),
+    density: 0,
+  )
+);
+
+$dark-theme: mat.define-dark-theme(
+  (
+    color: (
+      primary: $primary-palette,
+      accent: $accent-palette,
+      warn: $warn-palette,
+    ),
+    typography: mat.define-typography-config(),
+    density: 0,
+  )
+);
+
+html {
+  color-scheme: light;
+  background-color: var(--sys-surface);
+
+  @include mat.core();
+  @include mat.all-component-themes($light-theme);
+  @include mat.typography-hierarchy($light-theme);
+
+  --sys-primary: #3f51b5;
+  --sys-on-primary: #ffffff;
+  --sys-on-surface: rgba(0, 0, 0, 0.87);
+  --sys-on-surface-variant: rgba(0, 0, 0, 0.6);
+  --sys-surface: #fafafa;
+  --sys-surface-container: #f5f5f5;
+  --sys-error: #b3261e;
+}
+
+html.dark {
+  color-scheme: dark;
+  background-color: var(--sys-surface);
+
+  @include mat.all-component-themes($dark-theme);
+
+  --sys-primary: #9fa8da;
+  --sys-on-primary: #1a237e;
+  --sys-on-surface: #e0e0e0;
+  --sys-on-surface-variant: rgba(255, 255, 255, 0.64);
+  --sys-surface: #121212;
+  --sys-surface-container: #1e1e1e;
+  --sys-error: #f2b8b5;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background-color: var(--sys-surface);
+  color: var(--sys-on-surface);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: var(--sys-primary);
+}
+
+mat-icon {
+  vertical-align: middle;
+}

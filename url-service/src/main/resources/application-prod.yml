@@ -1,0 +1,30 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/urlshortener
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+app:
+  aws:
+    sqs:
+      click-events-queue: ${SQS_CLICK_EVENTS_QUEUE}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+
+logging:
+  level:
+    com.urlshortener: INFO
+    org.springframework: WARN

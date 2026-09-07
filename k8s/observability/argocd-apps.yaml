@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 65.5.1
+    chart: kube-prometheus-stack
+    helm:
+      valueFiles:
+        - https://raw.githubusercontent.com/your-org/url-shortener/main/k8s/observability/values/prometheus-stack-values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    targetRevision: 1.10.6
+    chart: tempo
+    helm:
+      parameters:
+        - name: tempo.receivers.otlp.protocols.grpc
+          value: "true"
+        - name: tempo.receivers.otlp.protocols.http
+          value: "true"
+        - name: tempo.storage.trace.backend
+          value: local
+        - name: tempo.storage.trace.local.path
+          value: /var/tempo/traces
+        - name: tempo.storage.trace.local.size
+          value: 2GiB
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

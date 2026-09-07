@@ -1,0 +1,246 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Root stack - URL Shortener platform infrastructure on AWS (EKS, RDS, ElastiCache, SQS, ECR, IRSA). Alternative to the Terraform stack under infra/terraform.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: { default: "Stack settings" }
+        Parameters: [Environment, Project]
+      - Label: { default: "VPC" }
+        Parameters: [VpcCidr, EnableNatGateway]
+      - Label: { default: "EKS" }
+        Parameters: [ClusterVersion, EksInstanceType, GeneralDesiredSize, GeneralMinSize, GeneralMaxSize, SpotMinSize, SpotDesiredSize, SpotMaxSize, NodeDiskSize, OidcThumbprint1]
+      - Label: { default: "RDS PostgreSQL" }
+        Parameters: [RdsInstanceClass, RdsAllocatedStorage, RdsMasterUsername, RdsMasterPassword]
+      - Label: { default: "Redis (Elasticache)" }
+        Parameters: [RedisNodeType, RedisNumCacheNodes]
+      - Label: { default: "SQS" }
+        Parameters: [SqsVisibilityTimeout]
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, staging, prod]
+    Default: prod
+  Project:
+    Type: String
+    Default: url-shortener
+  VpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+  EnableNatGateway:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+  ClusterVersion:
+    Type: String
+    Default: "1.30"
+  EksInstanceType:
+    Type: String
+    Default: m5.large
+  GeneralDesiredSize:
+    Type: Number
+    Default: 3
+  GeneralMinSize:
+    Type: Number
+    Default: 3
+  GeneralMaxSize:
+    Type: Number
+    Default: 12
+  SpotMinSize:
+    Type: Number
+    Default: 0
+  SpotDesiredSize:
+    Type: Number
+    Default: 0
+  SpotMaxSize:
+    Type: Number
+    Default: 10
+  NodeDiskSize:
+    Type: Number
+    Default: 100
+  OidcThumbprint1:
+    Type: String
+    AllowedPattern: "[0-9A-Fa-f]{40}"
+    Default: D291EBCAFE2C42F2B827D7E0BF8EFC368128FD69
+    Description: SHA1 fingerprint of the EKS OIDC issuer TLS certificate (derive with `echo | openssl s_client -connect oidc.eks.us-east-1.amazonaws.com:443 -servername oidc.eks.us-east-1.amazonaws.com 2>/dev/null | openssl x509 -fingerprint -noout | cut -d= -f2`)
+  RdsInstanceClass:
+    Type: String
+    Default: db.r6g.large
+  RdsAllocatedStorage:
+    Type: Number
+    Default: 50
+  RdsMasterUsername:
+    Type: String
+    Default: urlshortener
+  RdsMasterPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    MaxLength: 128
+    Description: Master password for PostgreSQL. Store the same value in the DB credentials secret if MSK default sync is used.
+  RedisNodeType:
+    Type: String
+    Default: cache.t4g.micro
+  RedisNumCacheNodes:
+    Type: Number
+    AllowedValues: [1, 2, 3, 5]
+    Default: 2
+  SqsVisibilityTimeout:
+    Type: Number
+    Default: 60
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: templates/network.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Project: !Ref Project
+        VpcCidr: !Ref VpcCidr
+        EnableNatGateway: !Ref EnableNatGateway
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+
+  EksStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: templates/eks.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Project: !Ref Project
+        ClusterVersion: !Ref ClusterVersion
+        InstanceType: !Ref EksInstanceType
+        GeneralDesiredSize: !Ref GeneralDesiredSize
+        GeneralMinSize: !Ref GeneralMinSize
+        GeneralMaxSize: !Ref GeneralMaxSize
+        SpotMinSize: !Ref SpotMinSize
+        SpotDesiredSize: !Ref SpotDesiredSize
+        SpotMaxSize: !Ref SpotMaxSize
+        NodeDiskSize: !Ref NodeDiskSize
+        OidcThumbprint1: !Ref OidcThumbprint1
+        PrivateSubnets:
+          Fn::ImportValue:
+            Fn::Sub: "${Project}-${Environment}-private-subnets"
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+    DependsOn: NetworkStack
+
+  RdsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: templates/rds.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Project: !Ref Project
+        InstanceClass: !Ref RdsInstanceClass
+        AllocatedStorage: !Ref RdsAllocatedStorage
+        MasterUsername: !Ref RdsMasterUsername
+        MasterPassword: !Ref RdsMasterPassword
+        AllowedSecurityGroupIds:
+          Fn::ImportValue:
+            Fn::Sub: "${Project}-${Environment}-cluster-security-group"
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+    DependsOn: EksStack
+
+  ElasticacheStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: templates/elasticache.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Project: !Ref Project
+        NodeType: !Ref RedisNodeType
+        NumCacheClusters: !Ref RedisNumCacheNodes
+        AllowedSecurityGroupIds:
+          Fn::ImportValue:
+            Fn::Sub: "${Project}-${Environment}-cluster-security-group"
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+    DependsOn: EksStack
+
+  SqsStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: templates/sqs.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Project: !Ref Project
+        VisibilityTimeout: !Ref SqsVisibilityTimeout
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+
+  EcrStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: templates/ecr.yaml
+      Parameters:
+        Project: !Ref Project
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+
+  IamStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: templates/iam.yaml
+      Parameters:
+        Environment: !Ref Environment
+        Project: !Ref Project
+        OidcProviderArn:
+          Fn::ImportValue:
+            Fn::Sub: "${Project}-${Environment}-oidc-provider-arn"
+        SqsQueueArn:
+          Fn::ImportValue:
+            Fn::Sub: "${Project}-${Environment}-click-events-queue-arn"
+      Tags:
+        - Key: ManagedBy
+          Value: cloudformation
+    DependsOn:
+      - EksStack
+      - SqsStack
+
+Outputs:
+  VpcId:
+    Value: !GetAtt NetworkStack.Outputs.VpcId
+  ClusterName:
+    Value: !GetAtt EksStack.Outputs.ClusterName
+  ClusterEndpoint:
+    Value: !GetAtt EksStack.Outputs.ClusterEndpoint
+  ClusterCertificateAuthorityData:
+    Value: !GetAtt EksStack.Outputs.ClusterCertificateAuthorityData
+  RdsEndpoint:
+    Value: !GetAtt RdsStack.Outputs.Endpoint
+  RdsPort:
+    Value: !GetAtt RdsStack.Outputs.Port
+  RdsSecretArn:
+    Value: !GetAtt RdsStack.Outputs.SecretArn
+  RedisEndpoint:
+    Value: !GetAtt ElasticacheStack.Outputs.PrimaryEndPointAddress
+  RedisPort:
+    Value: !GetAtt ElasticacheStack.Outputs.Port
+  ClickEventsQueueUrl:
+    Value: !GetAtt SqsStack.Outputs.QueueUrl
+  ClickEventsQueueArn:
+    Value: !GetAtt SqsStack.Outputs.QueueArn
+  EcrRepositoryUris:
+    Value: !Join
+      - ","
+      - - !GetAtt EcrStack.Outputs.UrlServiceRepositoryUri
+        - !GetAtt EcrStack.Outputs.AnalyticsServiceRepositoryUri
+        - !GetAtt EcrStack.Outputs.UserServiceRepositoryUri
+        - !GetAtt EcrStack.Outputs.ApiGatewayRepositoryUri
+        - !GetAtt EcrStack.Outputs.FrontendRepositoryUri
+  IrsaRoles:
+    Value: !Join
+      - ","
+      - - !GetAtt IamStack.Outputs.UrlServiceSqsPublisherRoleArn
+        - !GetAtt IamStack.Outputs.AnalyticsServiceSqsConsumerRoleArn
+        - !GetAtt IamStack.Outputs.SecretsReaderRoleArn

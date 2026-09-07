@@ -1,0 +1,245 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: redis
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: url-shortener
+  source:
+    repoURL: https://github.com/your-org/url-shortener.git
+    targetRevision: main
+    path: k8s/helm-charts/redis
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: url-shortener
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: url-service
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: url-service=012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/url-service
+    argocd-image-updater.argoproj.io/url-service.update-strategy: digest
+    argocd-image-updater.argoproj.io/url-service.helm.image-spec: image.tag
+    argocd-image-updater.argoproj.io/url-service.registry: ecr
+    argocd-image-updater.argoproj.io/write-back-method: git
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: url-shortener
+  source:
+    repoURL: https://github.com/your-org/url-shortener.git
+    targetRevision: main
+    path: k8s/helm-charts/url-service
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: url-shortener
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: analytics-service
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: analytics-service=012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/analytics-service
+    argocd-image-updater.argoproj.io/analytics-service.update-strategy: digest
+    argocd-image-updater.argoproj.io/analytics-service.helm.image-spec: image.tag
+    argocd-image-updater.argoproj.io/analytics-service.registry: ecr
+    argocd-image-updater.argoproj.io/write-back-method: git
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: url-shortener
+  source:
+    repoURL: https://github.com/your-org/url-shortener.git
+    targetRevision: main
+    path: k8s/helm-charts/analytics-service
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: url-shortener
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: user-service
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: user-service=012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/user-service
+    argocd-image-updater.argoproj.io/user-service.update-strategy: digest
+    argocd-image-updater.argoproj.io/user-service.helm.image-spec: image.tag
+    argocd-image-updater.argoproj.io/user-service.registry: ecr
+    argocd-image-updater.argoproj.io/write-back-method: git
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: url-shortener
+  source:
+    repoURL: https://github.com/your-org/url-shortener.git
+    targetRevision: main
+    path: k8s/helm-charts/user-service
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: url-shortener
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: api-gateway
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: api-gateway=012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/api-gateway
+    argocd-image-updater.argoproj.io/api-gateway.update-strategy: digest
+    argocd-image-updater.argoproj.io/api-gateway.helm.image-spec: image.tag
+    argocd-image-updater.argoproj.io/api-gateway.registry: ecr
+    argocd-image-updater.argoproj.io/write-back-method: git
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: url-shortener
+  source:
+    repoURL: https://github.com/your-org/url-shortener.git
+    targetRevision: main
+    path: k8s/helm-charts/api-gateway
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: url-shortener
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: frontend=012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/frontend
+    argocd-image-updater.argoproj.io/frontend.update-strategy: digest
+    argocd-image-updater.argoproj.io/frontend.helm.image-spec: image.tag
+    argocd-image-updater.argoproj.io/frontend.registry: ecr
+    argocd-image-updater.argoproj.io/write-back-method: git
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: url-shortener
+  source:
+    repoURL: https://github.com/your-org/url-shortener.git
+    targetRevision: main
+    path: k8s/helm-charts/frontend
+    helm:
+      valueFiles:
+        - values.yaml
+      parameters:
+        - name: image.tag
+          value: latest
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: url-shortener
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

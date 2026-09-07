@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - SQS FIFO click-events queue with dead-letter queue.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [dev, staging, prod]
+  Project:
+    Type: String
+    Default: url-shortener
+  VisibilityTimeout:
+    Type: Number
+    Default: 60
+  MessageRetention:
+    Type: Number
+    Default: 86400
+  DlqMessageRetention:
+    Type: Number
+    Default: 1209600
+  MaxReceiveCount:
+    Type: Number
+    Default: 5
+
+Resources:
+  Dlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Project}-${Environment}-click-events.fifo-dlq"
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      MessageRetentionPeriod: !Ref DlqMessageRetention
+      Tags:
+        - Key: Name
+          Value: !Sub "${Project}-${Environment}-click-events-dlq"
+
+  Queue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${Project}-${Environment}-click-events.fifo"
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      VisibilityTimeout: !Ref VisibilityTimeout
+      MessageRetentionPeriod: !Ref MessageRetention
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy: !Sub '{"deadLetterTargetArn":"${Dlq}","maxReceiveCount":${MaxReceiveCount}}'
+      Tags:
+        - Key: Name
+          Value: !Sub "${Project}-${Environment}-click-events"
+
+Outputs:
+  QueueUrl:
+    Value: !Ref Queue
+    Export: { Name: !Sub "${Project}-${Environment}-click-events-queue-url" }
+  QueueArn:
+    Value: !GetAtt Queue.Arn
+    Export: { Name: !Sub "${Project}-${Environment}-click-events-queue-arn" }
+  DlqArn:
+    Value: !GetAtt Dlq.Arn
+  DlqUrl:
+    Value: !Ref Dlq

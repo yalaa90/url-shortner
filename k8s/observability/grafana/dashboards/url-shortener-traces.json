@@ -1,0 +1,25 @@
+{
+  "uid": "url-shortener-traces",
+  "title": "URL Shortener Traces (Tempo)",
+  "tags": ["url-shortener", "tempo"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Traces",
+      "type": "traces",
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [
+        {
+          "queryType": "traceql",
+          "query": "{}",
+          "limit": 50
+        }
+      ]
+    }
+  ]
+}

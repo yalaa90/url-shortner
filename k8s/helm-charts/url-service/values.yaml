@@ -1,0 +1,60 @@
+replicaCount: 3
+
+image:
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/url-service
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1024Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+probes:
+  liveness:
+    initialDelaySeconds: 40
+    periodSeconds: 10
+  readiness:
+    initialDelaySeconds: 20
+    periodSeconds: 5
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /actuator/prometheus
+  prometheus.io/port: "8080"
+
+existingSecret: url-shortener-secrets
+
+config:
+  SPRING_PROFILES_ACTIVE: prod
+  DB_HOST: postgres-rds.default.svc.cluster.local
+  DB_PORT: "5432"
+  DB_NAME: urlshortener
+  DB_USERNAME: urlshortener_app
+  REDIS_HOST: redis.default.svc.cluster.local
+  REDIS_PORT: "6379"
+  SQS_CLICK_EVENTS_QUEUE: url-shortener-click-events.fifo
+  AWS_REGION: us-east-1
+  AWS_ENDPOINT_URL: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
