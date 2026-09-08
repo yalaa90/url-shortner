@@ -1,0 +1,24 @@
+spring:
+  config:
+    activate:
+      on-profile: docker
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/urlshortener?currentSchema=url_service
+    username: postgres
+    password: postgres
+
+  flyway:
+    schemas: url_service
+    create-schemas: true
+
+  data:
+    redis:
+      host: redis
+      port: 6379
+
+app:
+  aws:
+    endpoint-url: http://localstack:4566
+    sqs:
+      click-events-queue: http://localstack:4566/000000000000/click-events

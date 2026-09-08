@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatDividerModule } from '@angular/material/divider';
@@ -17,7 +16,6 @@ import { selectCurrentUser } from '../../../../state/auth/auth.selectors';
   imports: [
     CommonModule,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
     MatSlideToggleModule,
     MatDividerModule,
@@ -31,7 +29,6 @@ import { selectCurrentUser } from '../../../../state/auth/auth.selectors';
 
       <mat-card class="settings-card">
         <mat-card-header>
-          <mat-icon fontIcon="palette_outlined"></mat-icon>
           <mat-card-title>Appearance</mat-card-title>
         </mat-card-header>
         <mat-card-content>
@@ -52,7 +49,6 @@ import { selectCurrentUser } from '../../../../state/auth/auth.selectors';
 
       <mat-card class="settings-card">
         <mat-card-header>
-          <mat-icon fontIcon="account_circle_outlined"></mat-icon>
           <mat-card-title>Account</mat-card-title>
         </mat-card-header>
         <mat-card-content>
@@ -72,7 +68,6 @@ import { selectCurrentUser } from '../../../../state/auth/auth.selectors';
           <mat-divider />
           <div class="setting-row">
             <button mat-raised-button color="warn" (click)="logout()">
-              <mat-icon fontIcon="logout"></mat-icon>
               Sign out
             </button>
           </div>

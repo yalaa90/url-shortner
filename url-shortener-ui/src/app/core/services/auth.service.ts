@@ -42,7 +42,7 @@ export class AuthService {
     body.set('client_id', 'url-shortener-ui');
 
     return this.http
-      .post<TokenResponse>('/auth/token', body.toString(), {
+      .post<TokenResponse>('/api/v1/auth/token', body.toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
       .pipe(tap((response) => this.storeTokens(response)));
@@ -65,7 +65,7 @@ export class AuthService {
     body.set('client_id', 'url-shortener-ui');
 
     return this.http
-      .post<TokenResponse>('/auth/token', body.toString(), {
+      .post<TokenResponse>('/api/v1/auth/token', body.toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       })
       .pipe(

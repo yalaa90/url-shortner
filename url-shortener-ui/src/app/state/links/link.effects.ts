@@ -20,18 +20,11 @@ export class LinkEffects {
       ofType(linkActions.loadLinks),
       exhaustMap(({ page, size }) =>
         this.linkApi.getUserLinks(page, size).pipe(
-          mergeMap((response) =>
-            this.linkApi.getUserLinksCursor(undefined, size).pipe(
-              map((cursorResponse) =>
-                linkActions.loadLinksSuccess({
-                  links: response.data.content.length
-                    ? response.data.content
-                    : cursorResponse.data.data,
-                  page: response.data,
-                  cursorPage: cursorResponse.data,
-                })
-              )
-            )
+          map((response) =>
+            linkActions.loadLinksSuccess({
+              links: response.data.content,
+              page: response.data,
+            })
           ),
           catchError((error) => of(linkActions.loadLinksFailure({ error })))
         )
@@ -44,10 +37,10 @@ export class LinkEffects {
       ofType(linkActions.createLink),
       exhaustMap(({ payload }) =>
         this.linkApi.createLink(payload).pipe(
-          map((response) => linkActions.createLinkSuccess({ link: response.data })),
-          tap(() =>
-            this.snackBar.open('Link created', 'Dismiss', { duration: 3000 })
-          ),
+          mergeMap((response) => {
+            this.snackBar.open('Link created', 'Dismiss', { duration: 3000 });
+            return of(linkActions.createLinkSuccess({ link: response.data }));
+          }),
           catchError((error) => of(linkActions.createLinkFailure({ error })))
         )
       )

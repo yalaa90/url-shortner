@@ -3,14 +3,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { AppConfigService } from '../../core/services/app-config.service';
 
 @Component({
   selector: 'app-redirect',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatProgressSpinnerModule, MatIconModule, MatButtonModule],
+  imports: [CommonModule, RouterLink, MatProgressSpinnerModule, MatButtonModule],
   template: `
     <div class="redirect-container">
       @switch (state) {
@@ -19,13 +18,11 @@ import { AppConfigService } from '../../core/services/app-config.service';
           <p>Resolving link...</p>
         }
         @case ('notFound') {
-          <mat-icon fontIcon="link_off" class="error-icon"></mat-icon>
           <h1>Link not found</h1>
           <p>The short link you followed is invalid or has expired.</p>
           <a routerLink="/dashboard" mat-raised-button color="primary">Go to Dashboard</a>
         }
         @case ('error') {
-          <mat-icon fontIcon="error_outline" class="error-icon"></mat-icon>
           <h1>Something went wrong</h1>
           <p>We could not resolve this link right now.</p>
           <a routerLink="/dashboard" mat-raised-button>Go to Dashboard</a>
@@ -43,12 +40,6 @@ import { AppConfigService } from '../../core/services/app-config.service';
         justify-content: center;
         gap: 16px;
         text-align: center;
-      }
-      .error-icon {
-        font-size: 64px;
-        width: 64px;
-        height: 64px;
-        color: var(--sys-error, #b3261e);
       }
     `,
   ],

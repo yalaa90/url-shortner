@@ -1,7 +1,6 @@
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
 import {
   CreateLinkPayload,
-  CursorPage,
   Page,
   ShortLink,
 } from '../../shared/models/link.model';
@@ -10,7 +9,7 @@ export const linkActions = createActionGroup({
   source: 'Links',
   events: {
     'Load Links': props<{ page?: number; size?: number }>(),
-    'Load Links Success': props<{ links: ShortLink[]; page: Page<ShortLink>; cursorPage: CursorPage<ShortLink> }>(),
+    'Load Links Success': props<{ links: ShortLink[]; page: Page<ShortLink> }>(),
     'Load Links Failure': props<{ error: unknown }>(),
     'Create Link': props<{ payload: CreateLinkPayload }>(),
     'Create Link Success': props<{ link: ShortLink }>(),

@@ -1,6 +1,5 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.urlshortener.config.JacksonConfig,\
-  com.urlshortener.config.AuditingConfig,\
-  com.urlshortener.config.MetricsConfig,\
-  com.urlshortener.filter.CorrelationIdFilter,\
-  com.urlshortener.idempotency.IdempotencyAspect
+com.urlshortener.config.JacksonConfig
+com.urlshortener.config.AuditingConfig
+com.urlshortener.config.MetricsConfig
+com.urlshortener.filter.CorrelationIdFilter
+com.urlshortener.idempotency.IdempotencyAspect

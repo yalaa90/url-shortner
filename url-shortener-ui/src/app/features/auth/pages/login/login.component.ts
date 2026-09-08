@@ -8,7 +8,6 @@ import {
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -27,7 +26,6 @@ import { SharedButtonComponent } from '../../../../shared/components/shared-butt
     ReactiveFormsModule,
     RouterLink,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatFormFieldModule,
@@ -38,7 +36,6 @@ import { SharedButtonComponent } from '../../../../shared/components/shared-butt
     <div class="auth-page">
       <mat-card class="auth-card">
         <mat-card-header>
-          <mat-icon class="auth-logo" fontIcon="link"></mat-icon>
           <mat-card-title>Welcome back</mat-card-title>
           <mat-card-subtitle>Sign in to manage your links</mat-card-subtitle>
         </mat-card-header>
@@ -49,7 +46,6 @@ import { SharedButtonComponent } from '../../../../shared/components/shared-butt
               formControlName="username"
               label="Email"
               type="email"
-              leadingIcon="mail_outline"
               autocomplete="username"
               [errorMessage]="fieldError('username')"
             />
@@ -58,7 +54,6 @@ import { SharedButtonComponent } from '../../../../shared/components/shared-butt
               formControlName="password"
               label="Password"
               type="password"
-              leadingIcon="lock_outline"
               autocomplete="current-password"
               [errorMessage]="fieldError('password')"
             />
@@ -100,11 +95,6 @@ import { SharedButtonComponent } from '../../../../shared/components/shared-butt
         max-width: 420px;
         width: 100%;
         padding: 24px;
-      }
-      .auth-logo {
-        font-size: 40px;
-        width: 40px;
-        height: 40px;
       }
       .auth-form {
         display: flex;

@@ -1,0 +1,3 @@
+CREATE SCHEMA IF NOT EXISTS url_service;
+CREATE SCHEMA IF NOT EXISTS analytics_service;
+CREATE SCHEMA IF NOT EXISTS user_service;

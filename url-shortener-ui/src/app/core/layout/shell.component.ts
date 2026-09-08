@@ -3,7 +3,6 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -26,7 +25,6 @@ import { selectCurrentUser } from '../../state/auth/auth.selectors';
     MatToolbarModule,
     MatSidenavModule,
     MatListModule,
-    MatIconModule,
     MatButtonModule,
     MatMenuModule,
     MatTooltipModule,
@@ -36,20 +34,16 @@ import { selectCurrentUser } from '../../state/auth/auth.selectors';
     <mat-sidenav-container class="shell-container">
       <mat-sidenav mode="side" opened class="shell-sidenav">
         <div class="sidenav-brand">
-          <mat-icon fontIcon="link"></mat-icon>
           <span class="brand-name">URL Shortener</span>
         </div>
         <mat-nav-list>
           <a mat-list-item routerLink="/dashboard" routerLinkActive="active-link" aria-label="Dashboard">
-            <mat-icon matListItemIcon fontIcon="dashboard"></mat-icon>
             <span matListItemTitle>Dashboard</span>
           </a>
           <a mat-list-item routerLink="/links" routerLinkActive="active-link" aria-label="My Links">
-            <mat-icon matListItemIcon fontIcon="link"></mat-icon>
             <span matListItemTitle>My Links</span>
           </a>
           <a mat-list-item routerLink="/settings" routerLinkActive="active-link" aria-label="Settings">
-            <mat-icon matListItemIcon fontIcon="settings"></mat-icon>
             <span matListItemTitle>Settings</span>
           </a>
         </mat-nav-list>
@@ -60,24 +54,22 @@ import { selectCurrentUser } from '../../state/auth/auth.selectors';
           <span class="toolbar-title">URL Shortener</span>
           <span class="toolbar-spacer"></span>
           <button
-            mat-icon-button
+            mat-button
             (click)="themeService.toggle()"
             [attr.aria-label]="themeService.darkMode() ? 'Switch to light mode' : 'Switch to dark mode'"
             matTooltip="Toggle theme"
           >
-            <mat-icon [fontIcon]="themeService.darkMode() ? 'light_mode' : 'dark_mode'"></mat-icon>
+            {{ themeService.darkMode() ? 'Light' : 'Dark' }}
           </button>
-          <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="User menu">
-            <mat-icon fontIcon="account_circle"></mat-icon>
+          <button mat-button [matMenuTriggerFor]="userMenu" aria-label="User menu">
+            {{ ((currentUser$ | async)?.email ?? 'U').charAt(0).toUpperCase() }}
           </button>
           <mat-menu #userMenu="matMenu">
             <button mat-menu-item disabled>
-              <mat-icon fontIcon="person_outline"></mat-icon>
               <span>{{ (currentUser$ | async)?.email ?? 'User' }}</span>
             </button>
             <mat-divider />
             <button mat-menu-item (click)="logout()">
-              <mat-icon fontIcon="logout"></mat-icon>
               <span>Logout</span>
             </button>
           </mat-menu>

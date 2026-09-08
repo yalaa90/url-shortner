@@ -5,6 +5,7 @@ import com.urlshortener.exception.ResourceNotFoundException;
 import com.urlshortener.url.cache.BloomFilterService;
 import com.urlshortener.url.cache.CacheService;
 import com.urlshortener.url.cache.CodePoolManager;
+import com.urlshortener.url.config.UrlConfig;
 import com.urlshortener.url.dto.CreateLinkRequest;
 import com.urlshortener.url.dto.LinkResponse;
 import com.urlshortener.url.dto.UpdateLinkRequest;
@@ -46,6 +47,7 @@ public class UrlService {
     private final ClickEventPublisher clickEventPublisher;
     private final Counter urlCreateCounter;
     private final Timer urlRedirectTimer;
+    private final UrlConfig urlConfig;
 
     @Transactional
     public LinkResponse createLink(CreateLinkRequest request, UUID ownerId) {
@@ -200,7 +202,7 @@ public class UrlService {
 
     private LinkResponse buildLinkResponse(ShortUrl shortUrl) {
         LinkResponse response = linkMapper.toResponse(shortUrl);
-        response.setShortUrl("https://sho.rt/" + shortUrl.getEffectiveCode());
+        response.setShortUrl(urlConfig.getBaseUrl() + "/" + shortUrl.getEffectiveCode());
         return response;
     }
 }

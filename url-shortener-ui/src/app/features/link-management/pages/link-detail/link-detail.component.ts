@@ -2,7 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -27,7 +26,6 @@ interface DetailResponse {
     CommonModule,
     RouterLink,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
@@ -43,7 +41,6 @@ interface DetailResponse {
           <p class="subtitle" *ngIf="link$ | async as link">{{ link.shortUrl }}</p>
         </div>
         <a mat-button routerLink="/links" aria-label="Back to links">
-          <mat-icon fontIcon="arrow_back"></mat-icon>
           Back
         </a>
       </header>
@@ -95,7 +92,6 @@ interface DetailResponse {
 
             <div class="detail-actions">
               <a mat-raised-button color="primary" [routerLink]="['/analytics', link.shortCode]">
-                <mat-icon fontIcon="insert_chart_outlined"></mat-icon>
                 View Analytics
               </a>
             </div>

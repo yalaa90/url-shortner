@@ -2,7 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -32,7 +31,6 @@ type LinkRow = ShortLink & Record<string, unknown>;
     CommonModule,
     RouterLink,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
@@ -51,7 +49,6 @@ type LinkRow = ShortLink & Record<string, unknown>;
           <p class="subtitle">Create, manage and track your short links.</p>
         </div>
         <a mat-raised-button color="primary" routerLink="/links/create" aria-label="Create a new link">
-          <mat-icon fontIcon="add_link"></mat-icon>
           New Link
         </a>
       </header>
@@ -87,21 +84,21 @@ type LinkRow = ShortLink & Record<string, unknown>;
 
             <ng-template tableActions let-row>
               <button
-                mat-icon-button
+                mat-button
                 [routerLink]="['/links', row.shortCode]"
                 matTooltip="View analytics"
                 aria-label="View analytics"
               >
-                <mat-icon fontIcon="insert_chart_outlined"></mat-icon>
+                Analytics
               </button>
               <button
-                mat-icon-button
+                mat-button
                 matTooltip="Deactivate link"
                 aria-label="Deactivate link"
                 [disabled]="!row.active"
                 (click)="confirmDeactivate(row)"
               >
-                <mat-icon fontIcon="delete_outline"></mat-icon>
+                Deactivate
               </button>
             </ng-template>
           </app-shared-table>

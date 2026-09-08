@@ -20,7 +20,9 @@ export class AppConfigService {
     registrationUri: '',
   });
 
-  readonly apiBaseUrl = this.config.asReadonly();
+  apiBaseUrl(): string {
+    return this.config().apiBaseUrl;
+  }
 
   registerRedirectUrl(): string {
     return this.config().registrationUri;

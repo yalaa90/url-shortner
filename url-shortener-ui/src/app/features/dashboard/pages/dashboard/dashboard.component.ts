@@ -2,7 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatListModule } from '@angular/material/list';
@@ -19,7 +18,6 @@ import { selectCurrentUser } from '../../../../state/auth/auth.selectors';
 export interface StatCard {
   label: string;
   value: number;
-  icon: string;
   accent: string;
 }
 
@@ -30,7 +28,6 @@ export interface StatCard {
     CommonModule,
     RouterLink,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatListModule,
@@ -48,7 +45,6 @@ export interface StatCard {
           </p>
         </div>
         <a mat-raised-button color="primary" routerLink="/links" aria-label="Create a new link">
-          <mat-icon fontIcon="add_link"></mat-icon>
           New Link
         </a>
       </header>
@@ -57,9 +53,6 @@ export interface StatCard {
         @for (stat of statCards$ | async; track stat.label) {
           <mat-card class="stat-card" [style.--stat-accent]="stat.accent">
             <mat-card-content>
-              <div class="stat-icon">
-                <mat-icon [fontIcon]="stat.icon"></mat-icon>
-              </div>
               <div class="stat-details">
                 <span class="stat-value">{{ stat.value }}</span>
                 <span class="stat-label">{{ stat.label }}</span>
@@ -85,7 +78,6 @@ export interface StatCard {
               <mat-list>
                 @for (link of recentLinks$ | async; track link.shortCode) {
                   <mat-list-item class="recent-item">
-                    <mat-icon matListItemIcon fontIcon="link"></mat-icon>
                     <div matListItemTitle class="recent-title">
                       <span class="short-url">{{ link.shortUrl }}</span>
                       <app-copy-to-clipboard [text]="link.shortUrl"></app-copy-to-clipboard>
@@ -105,7 +97,6 @@ export interface StatCard {
         } @else {
           <mat-card>
             <mat-card-content class="empty-state">
-              <mat-icon fontIcon="link_off"></mat-icon>
               <p>No links yet. Create your first short link.</p>
               <a mat-flat-button color="primary" routerLink="/links">Create a Link</a>
             </mat-card-content>
@@ -137,16 +128,6 @@ export interface StatCard {
         align-items: center;
         gap: 16px;
         padding: 20px;
-      }
-      .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: color-mix(in srgb, var(--stat-accent) 16%, transparent);
-        color: var(--stat-accent);
       }
       .stat-details {
         display: flex;
@@ -198,12 +179,6 @@ export interface StatCard {
         padding: 48px;
         text-align: center;
       }
-      .empty-state mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-        color: var(--sys-on-surface-variant, rgba(0, 0, 0, 0.6));
-      }
     `,
   ],
 })
@@ -223,10 +198,10 @@ export class DashboardComponent implements OnInit {
       const clicks = links.reduce((sum, link) => sum + (link.clickCount ?? 0), 0);
       const average = total ? Math.round(clicks / total) : 0;
       return [
-        { label: 'Total Links', value: total, icon: 'link', accent: '#6750A4' },
-        { label: 'Active Links', value: active, icon: 'check_circle_outline', accent: '#2E7D32' },
-        { label: 'Total Clicks', value: clicks, icon: 'ads_click', accent: '#1565C0' },
-        { label: 'Avg Clicks / Link', value: average, icon: 'bar_chart', accent: '#EF6C00' },
+        { label: 'Total Links', value: total, accent: '#6750A4' },
+        { label: 'Active Links', value: active, accent: '#2E7D32' },
+        { label: 'Total Clicks', value: clicks, accent: '#1565C0' },
+        { label: 'Avg Clicks / Link', value: average, accent: '#EF6C00' },
       ];
     })
   );

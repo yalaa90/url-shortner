@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "app.url")
 public class UrlConfig {
 
-    private String baseUrl = "https://sho.rt";
+    private String baseUrl = "http://localhost:8080";
     private int defaultCodeLength = 7;
     private int codePoolWarmSize = 10_000;
     private int codePoolRefillThreshold = 5_000;

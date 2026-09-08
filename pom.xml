@@ -49,7 +49,6 @@
         <opentelemetry.version>1.36.0</opentelemetry.version>
         <logstash-logback.version>7.4</logstash-logback.version>
         <springdoc.version>2.4.0</springdoc.version>
-        <clickhouse.version>0.6.0</clickhouse.version>
         <bouncy-castle.version>1.78.1</bouncy-castle.version>
     </properties>
 
@@ -163,14 +162,6 @@
                 <groupId>net.logstash.logback</groupId>
                 <artifactId>logstash-logback-encoder</artifactId>
                 <version>${logstash-logback.version}</version>
-            </dependency>
-
-            <!-- ClickHouse -->
-            <dependency>
-                <groupId>com.clickhouse</groupId>
-                <artifactId>clickhouse-jdbc</artifactId>
-                <classifier>all</classifier>
-                <version>${clickhouse.version}</version>
             </dependency>
 
             <!-- Security -->

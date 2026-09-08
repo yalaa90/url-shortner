@@ -2,7 +2,6 @@ import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -28,7 +27,6 @@ const emptySummary: AnalyticsSummary = {
     CommonModule,
     RouterLink,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatButtonToggleModule,
@@ -44,7 +42,6 @@ const emptySummary: AnalyticsSummary = {
           <p class="subtitle">Performance for <code>{{ code }}</code></p>
         </div>
         <a mat-button routerLink="/links" aria-label="Back to links">
-          <mat-icon fontIcon="arrow_back"></mat-icon>
           Back
         </a>
       </header>
@@ -64,21 +61,18 @@ const emptySummary: AnalyticsSummary = {
         <section class="kpi-grid" aria-label="Key metrics">
           <mat-card class="kpi-card">
             <mat-card-content>
-              <mat-icon fontIcon="ads_click"></mat-icon>
               <span class="kpi-value">{{ summary.totalClicks }}</span>
               <span class="kpi-label">Total clicks</span>
             </mat-card-content>
           </mat-card>
           <mat-card class="kpi-card">
             <mat-card-content>
-              <mat-icon fontIcon="groups"></mat-icon>
               <span class="kpi-value">{{ summary.uniqueVisitors }}</span>
               <span class="kpi-label">Unique visitors</span>
             </mat-card-content>
           </mat-card>
           <mat-card class="kpi-card">
             <mat-card-content>
-              <mat-icon fontIcon="public"></mat-icon>
               <span class="kpi-value">{{ summary.countries | objectSize }}</span>
               <span class="kpi-label">Countries</span>
             </mat-card-content>
@@ -126,9 +120,6 @@ const emptySummary: AnalyticsSummary = {
         align-items: flex-start;
         gap: 4px;
         padding: 20px;
-      }
-      .kpi-card mat-icon {
-        color: var(--sys-primary, #6750a4);
       }
       .kpi-value {
         font-size: 1.75rem;

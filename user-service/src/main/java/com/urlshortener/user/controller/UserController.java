@@ -12,8 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -41,10 +40,9 @@ public class UserController {
 
     @GetMapping("/me")
     @Operation(summary = "Get current user profile")
-    public ResponseEntity<ApiResponse<UserResponse>> getMe(
-            @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<ApiResponse<UserResponse>> getMe(Authentication authentication) {
 
-        String subjectId = jwt.getSubject();
+        String subjectId = authentication.getName();
         UserResponse response = userService.getUser(subjectId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
@@ -60,17 +58,17 @@ public class UserController {
     @PatchMapping("/me")
     @Operation(summary = "Update current user profile")
     public ResponseEntity<ApiResponse<UserResponse>> updateMe(
-            @AuthenticationPrincipal Jwt jwt,
+            Authentication authentication,
             @Valid @RequestBody UpdateUserRequest request) {
 
-        UserResponse response = userService.updateUser(jwt.getSubject(), request);
+        UserResponse response = userService.updateUser(authentication.getName(), request);
         return ResponseEntity.ok(ApiResponse.success("Profile updated", response));
     }
 
     @DeleteMapping("/me")
     @Operation(summary = "Delete current user")
-    public ResponseEntity<ApiResponse<Void>> deleteMe(@AuthenticationPrincipal Jwt jwt) {
-        userService.deleteUser(jwt.getSubject());
+    public ResponseEntity<ApiResponse<Void>> deleteMe(Authentication authentication) {
+        userService.deleteUser(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("User deleted", null));
     }
 

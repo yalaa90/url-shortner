@@ -1,21 +1,20 @@
 import { Component, Input, booleanAttribute } from '@angular/core';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-copy-to-clipboard',
   standalone: true,
-  imports: [MatIconModule, MatButtonModule, MatTooltipModule],
+  imports: [MatButtonModule, MatTooltipModule],
   template: `
     <button
-      mat-icon-button
+      mat-raised-button
       [disabled]="disabled"
       (click)="copy()"
       matTooltip="Copy to clipboard"
       aria-label="Copy to clipboard"
     >
-      <mat-icon [fontIcon]="copied ? 'check_circle' : 'content_copy'"></mat-icon>
+      {{ copied ? 'Copied' : 'Copy' }}
     </button>
   `,
   styles: [

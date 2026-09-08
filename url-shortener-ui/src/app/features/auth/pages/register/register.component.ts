@@ -8,7 +8,6 @@ import {
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { AppConfigService } from '../../../../core/services/app-config.service';
@@ -24,7 +23,6 @@ import { passwordValidator } from '../../../../shared/validators/password.valida
     ReactiveFormsModule,
     RouterLink,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
     SharedInputComponent,
     SharedButtonComponent,
@@ -33,7 +31,6 @@ import { passwordValidator } from '../../../../shared/validators/password.valida
     <div class="auth-page">
       <mat-card class="auth-card">
         <mat-card-header>
-          <mat-icon class="auth-logo" fontIcon="person_add"></mat-icon>
           <mat-card-title>Create an account</mat-card-title>
           <mat-card-subtitle>Your identity is provisioned by the identity provider</mat-card-subtitle>
         </mat-card-header>
@@ -44,7 +41,6 @@ import { passwordValidator } from '../../../../shared/validators/password.valida
               formControlName="email"
               label="Email"
               type="email"
-              leadingIcon="mail_outline"
               autocomplete="email"
               [errorMessage]="fieldError('email')"
             />
@@ -53,7 +49,6 @@ import { passwordValidator } from '../../../../shared/validators/password.valida
               formControlName="password"
               label="Password"
               type="password"
-              leadingIcon="lock_outline"
               autocomplete="new-password"
               hint="At least 12 characters, with upper, lower, digit and symbol."
               [errorMessage]="fieldError('password')"
@@ -63,7 +58,6 @@ import { passwordValidator } from '../../../../shared/validators/password.valida
               formControlName="confirmPassword"
               label="Confirm Password"
               type="password"
-              leadingIcon="lock_outline"
               autocomplete="new-password"
               [errorMessage]="fieldError('confirmPassword')"
             />
@@ -98,11 +92,6 @@ import { passwordValidator } from '../../../../shared/validators/password.valida
         max-width: 460px;
         width: 100%;
         padding: 24px;
-      }
-      .auth-logo {
-        font-size: 40px;
-        width: 40px;
-        height: 40px;
       }
       .auth-form {
         display: flex;

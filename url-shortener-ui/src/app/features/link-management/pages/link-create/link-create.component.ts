@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -31,7 +30,6 @@ import QRCode from 'qrcode';
     ReactiveFormsModule,
     RouterLink,
     MatCardModule,
-    MatIconModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     MatFormFieldModule,
@@ -48,7 +46,6 @@ import QRCode from 'qrcode';
           <p class="subtitle">Shorten any URL with an optional custom alias.</p>
         </div>
         <a mat-button routerLink="/links" aria-label="Back to links">
-          <mat-icon fontIcon="arrow_back"></mat-icon>
           Back
         </a>
       </header>
@@ -59,7 +56,6 @@ import QRCode from 'qrcode';
             <form [formGroup]="createForm" (ngSubmit)="onSubmit()" novalidate>
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Destination URL</mat-label>
-                <mat-icon matPrefix fontIcon="public"></mat-icon>
                 <input matInput formControlName="url" placeholder="https://example.com/long/path" />
                 <mat-hint>Must start with http:// or https://</mat-hint>
                 <mat-error *ngIf="getError('url', 'required')">URL is required</mat-error>
@@ -68,7 +64,6 @@ import QRCode from 'qrcode';
 
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Custom Alias (optional)</mat-label>
-                <mat-icon matPrefix fontIcon="edit_note"></mat-icon>
                 <input
                   matInput
                   formControlName="customAlias"
@@ -84,9 +79,8 @@ import QRCode from 'qrcode';
 
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Expiration date (optional)</mat-label>
-                <mat-icon matPrefix fontIcon="schedule"></mat-icon>
-                <input matInput formControlName="expiresAt" type="datetime-local" [min]="tomorrowLocal" />
-                <mat-hint>Local date and time after which the link stops redirecting.</mat-hint>
+                <input matInput formControlName="expiresAt" type="date" [min]="tomorrowLocal" />
+                <mat-hint>Date after which the link stops redirecting.</mat-hint>
               </mat-form-field>
 
               <div class="form-actions">
@@ -103,7 +97,6 @@ import QRCode from 'qrcode';
       } @else {
         <mat-card class="success-card">
           <mat-card-header>
-            <mat-icon class="success-icon" fontIcon="check_circle"></mat-icon>
             <mat-card-title>Your link is ready!</mat-card-title>
             <mat-card-subtitle>Copy it or view analytics.</mat-card-subtitle>
           </mat-card-header>
@@ -119,7 +112,6 @@ import QRCode from 'qrcode';
             </div>
             <div class="success-actions">
               <a mat-raised-button color="primary" [routerLink]="['/links', createdLink.shortCode]">
-                <mat-icon fontIcon="insert_chart_outlined"></mat-icon>
                 View Analytics
               </a>
               <button mat-stroked-button (click)="resetForm()" type="button">
@@ -154,12 +146,6 @@ import QRCode from 'qrcode';
       .success-card {
         max-width: 520px;
         margin: 0 auto;
-      }
-      .success-icon {
-        color: #2e7d32;
-        font-size: 40px;
-        width: 40px;
-        height: 40px;
       }
       .short-url-preview {
         display: flex;
@@ -199,9 +185,7 @@ export class LinkCreateComponent implements OnInit {
   get tomorrowLocal(): string {
     const date = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const pad = (n: number): string => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-      date.getHours()
-    )}:${pad(date.getMinutes())}`;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
   }
 
   urlErrorMessage = '';
@@ -237,7 +221,7 @@ export class LinkCreateComponent implements OnInit {
       url: this.createForm.value.url.trim(),
       customAlias: this.createForm.value.customAlias?.trim() || undefined,
       expiresAt: this.createForm.value.expiresAt
-        ? new Date(this.createForm.value.expiresAt).toISOString()
+        ? new Date(`${this.createForm.value.expiresAt}T00:00:00`).toISOString()
         : undefined,
     };
     this.store.dispatch(linkActions.createLink({ payload }));

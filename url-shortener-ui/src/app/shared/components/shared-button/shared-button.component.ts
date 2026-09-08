@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Output, booleanAttribute } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { NgClass } from '@angular/common';
 
@@ -9,7 +8,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 @Component({
   selector: 'app-shared-button',
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule, NgClass],
+  imports: [MatButtonModule, MatProgressSpinnerModule, NgClass],
   template: `
     <button
       mat-raised-button
@@ -24,8 +23,6 @@ export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
     >
       @if (loading) {
         <mat-spinner diameter="18" strokeWidth="2" />
-      } @else if (icon) {
-        <mat-icon [fontIcon]="icon"></mat-icon>
       }
       <span>{{ label }}</span>
     </button>
@@ -58,7 +55,6 @@ export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger';
 })
 export class SharedButtonComponent {
   @Input() label = '';
-  @Input() icon?: string;
   @Input() type: 'button' | 'submit' = 'button';
   @Input({ transform: booleanAttribute }) disabled = false;
   @Input({ transform: booleanAttribute }) loading = false;

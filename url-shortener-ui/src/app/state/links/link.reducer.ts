@@ -34,12 +34,10 @@ export const linkReducer = createReducer(
     loading: true,
     error: null,
   })),
-  on(linkActions.loadLinksSuccess, (state, { links, cursorPage }): LinkState =>
+  on(linkActions.loadLinksSuccess, (state, { links }): LinkState =>
     linkAdapter.upsertMany(links, {
       ...state,
       loading: false,
-      nextCursor: cursorPage.nextCursor,
-      hasMore: cursorPage.hasMore,
     })
   ),
   on(linkActions.loadLinksFailure, (state, { error }): LinkState => ({
@@ -52,12 +50,14 @@ export const linkReducer = createReducer(
     creating: true,
   })),
   on(linkActions.createLinkSuccess, (state, { link }): LinkState =>
-    linkAdapter.upsertOne(link, {
-      ...state,
-      creating: false,
-      lastCreatedCode: link.shortCode,
-      optimisticCodes: state.optimisticCodes.filter((code) => code !== link.shortCode),
-    })
+    link
+      ? linkAdapter.upsertOne(link, {
+          ...state,
+          creating: false,
+          lastCreatedCode: link.shortCode,
+          optimisticCodes: state.optimisticCodes.filter((code) => code !== link.shortCode),
+        })
+      : { ...state, creating: false }
   ),
   on(linkActions.createLinkFailure, (state, { error }): LinkState => ({
     ...state,

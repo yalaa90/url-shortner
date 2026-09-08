@@ -16,7 +16,9 @@ import java.util.function.Predicate;
 public class JwtValidationGlobalFilter implements GlobalFilter, Ordered {
 
     private final List<Predicate<String>> publicPaths = List.of(
+            p -> p.startsWith("/api/v1/auth"),
             p -> p.matches("^/api/v1/links/[^/]+$"),
+            p -> p.matches("^/[a-zA-Z0-9_-]+$"),
             p -> p.startsWith("/fallback"),
             p -> p.startsWith("/actuator"),
             p -> p.startsWith("/swagger"),

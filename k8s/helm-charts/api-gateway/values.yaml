@@ -64,3 +64,4 @@ affinity: {}
 env:
   SPRING_PROFILES_ACTIVE: prod
   APP_CORS_ALLOWED_ORIGINS: https://sho.rt
+  URL_SERVICE_URI: http://url-service.default.svc.cluster.local

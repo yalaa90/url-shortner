@@ -12,7 +12,7 @@ Browser ──► Frontend (Angular 17 + nginx)   sho.rt
         ┌──────┬──────────────┬──────────────┐
         ▼      ▼              ▼              ▼
   user-service  url-service   analytics-service
-  (auth/JWT)    (core)         (SQS consumer + ClickHouse rollups)
+  (auth/JWT)    (core)         (SQS consumer + PostgreSQL rollups)
         │      │   │                  ▲
        RDS   Redis  └── SQS FIFO ──────┘
               (cache)
@@ -40,7 +40,7 @@ url-shortener/
 ├── infra/terraform/         VPC, EKS, RDS, ElastiCache, SQS, ECR, IRSA (modules)
 ├── k8s/observability/       kube-prometheus-stack, Tempo, ServiceMonitors, alerts, dashboards
 ├── .github/workflows/       Backend/Frontend CI + Terraform PR plan/apply
-├── docker-compose.yml       Local infra (PostgreSQL, Redis, LocalStack, ClickHouse)
+├── docker-compose.yml       Local infra (PostgreSQL, Redis, LocalStack)
 └── Makefile                 Developer task runner
 ```
 
@@ -54,7 +54,7 @@ url-shortener/
 ## Local development
 
 ```bash
-make infra-up            # PostgreSQL, Redis, LocalStack, ClickHouse
+make infra-up            # PostgreSQL, Redis, LocalStack
 make backend-build       # compile all Maven modules
 make backend-test        # unit tests
 make backend-test-it     # integration tests (Testcontainers, requires Docker)
@@ -155,8 +155,8 @@ aws cloudformation deploy \
 Every service exposes springdoc OpenAPI 3 (`/v3/api-docs` JSON + `/swagger-ui.html`). On the gateway these paths are on the public allowlist, so no auth token is required to browse them.
 
 **Production (via api-gateway):**
-- Swagger UI: `https://api.sho.rt/swagger-ui.html`
-- OpenAPI: `https://api.sho.rt/v3/api-docs` and `https://api.sho.rt/v3/api-docs/gateway`
+- Swagger UI: `https://url-shortner/swagger-ui.html`
+- OpenAPI: `https://url-shortner/v3/api-docs` and `https://url-shortner/v3/api-docs/gateway`
 
 **Local dev:**
 | Service        | Swagger UI                              | OpenAPI JSON                          |
