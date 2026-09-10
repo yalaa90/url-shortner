@@ -75,6 +75,12 @@
             <version>${guava.version}</version>
         </dependency>
 
+        <!-- Kafka -->
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+
         <!-- AWS -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

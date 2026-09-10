@@ -12,6 +12,7 @@ PWD := $(shell pwd)
 .PHONY: help infra-up infra-down backend-build backend-test backend-test-it \
         frontend-install frontend-build frontend-serve backend-run \
         run-gateway run-url-service run-analytics run-user-service \
+        load-test load-test-create load-test-resolve load-test-report \
         helm-lint helm-template k8s-bootstrap terraform-init terraform-plan terraform-apply \
         check clean
 
@@ -53,6 +54,21 @@ frontend-build: ## Build the Angular SPA (production)
 
 frontend-serve: ## Run the Angular dev server
 	cd url-shortener-ui && npm start
+
+load-test: ## Run Gatling load test against url-service (default http://localhost:8081)
+	$(MVN) -B -ntp -f load-test/pom.xml gatling:test \
+		-Dgatling.simulationClass=com.urlshortener.load.UrlShortenerSimulation
+
+load-test-create: ## Run create-only Gatling load test
+	$(MVN) -B -ntp -f load-test/pom.xml gatling:test \
+		-Dgatling.simulationClass=com.urlshortener.load.CreateLinkSimulation
+
+load-test-resolve: ## Run resolve-only Gatling load test (uses data/short-codes.csv)
+	$(MVN) -B -ntp -f load-test/pom.xml gatling:test \
+		-Dgatling.simulationClass=com.urlshortener.load.ResolveLinkSimulation
+
+load-test-report: ## Print path to the latest Gatling HTML report
+	@ls -td load-test/target/gatling/*/ | head -1
 
 helm-lint: ## Lint all Helm charts
 	for c in k8s/helm-charts/*/; do $(HELM) lint "$$c"; done

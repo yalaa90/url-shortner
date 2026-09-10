@@ -4,9 +4,14 @@ spring:
       on-profile: docker
 
   datasource:
-    url: jdbc:postgresql://postgres:5432/urlshortener?currentSchema=url_service
-    username: postgres
-    password: postgres
+    leader:
+      url: jdbc:postgresql://postgres:5432/urlshortener?currentSchema=url_service
+      username: postgres
+      password: postgres
+    follower:
+      url: jdbc:postgresql://postgres:5432/urlshortener?currentSchema=url_service
+      username: postgres
+      password: postgres
 
   flyway:
     schemas: url_service
@@ -16,6 +21,9 @@ spring:
     redis:
       host: redis
       port: 6379
+
+  kafka:
+    bootstrap-servers: kafka:9093
 
 app:
   aws:

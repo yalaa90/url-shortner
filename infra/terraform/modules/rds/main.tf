@@ -16,6 +16,7 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
     host     = aws_db_instance.this.address
     port     = aws_db_instance.this.port
     dbname   = "urlshortener"
+    replica_host = aws_db_instance.replica.address
   })
 }
 
@@ -77,6 +78,24 @@ resource "aws_db_instance" "this" {
 
   tags = {
     Name = var.identifier
+  }
+}
+
+resource "aws_db_instance" "replica" {
+  identifier               = "${var.identifier}-replica"
+  replicate_source_db      = aws_db_instance.this.identifier
+  instance_class           = var.instance_class
+  allocated_storage        = var.allocated_storage
+  storage_type             = "gp3"
+  max_allocated_storage    = 200
+  vpc_security_group_ids   = [aws_security_group.db.id]
+  monitoring_interval      = 60
+  monitoring_role_arn      = aws_iam_role.rds_monitoring.arn
+  performance_insights_enabled = true
+  copy_tags_to_snapshot    = true
+
+  tags = {
+    Name = "${var.identifier}-replica"
   }
 }
 

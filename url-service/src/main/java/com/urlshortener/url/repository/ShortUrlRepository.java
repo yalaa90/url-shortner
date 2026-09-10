@@ -52,6 +52,6 @@ public interface ShortUrlRepository extends JpaRepository<ShortUrl, Long> {
     @Query("SELECT COUNT(s) FROM ShortUrl s WHERE s.ownerId = :ownerId AND s.active = true")
     long countActiveByOwnerId(@Param("ownerId") java.util.UUID ownerId);
 
-    @Query("SELECT s.shortCode FROM ShortUrl s WHERE s.shortCode = :code AND s.active = true AND (s.expiresAt IS NULL OR s.expiresAt > :now)")
-    Optional<String> findActiveCode(@Param("code") String code, @Param("now") Instant now);
+    @Query("SELECT s FROM ShortUrl s WHERE s.shortCode = :code AND s.active = true AND (s.expiresAt IS NULL OR s.expiresAt > :now)")
+    Optional<ShortUrl> findActiveCode(@Param("code") String code, @Param("now") Instant now);
 }

@@ -40,6 +40,19 @@ public class Base62Encoder {
         return result;
     }
 
+    public String encodeCompact(long value) {
+        if (value == 0) {
+            return String.valueOf(ALPHABET.charAt(0));
+        }
+        StringBuilder sb = new StringBuilder();
+        long v = value;
+        while (v > 0) {
+            sb.append(ALPHABET.charAt((int) (v % ALPHABET.length())));
+            v /= ALPHABET.length();
+        }
+        return sb.reverse().toString();
+    }
+
     public String generateRandom() {
         StringBuilder sb = new StringBuilder(CODE_LENGTH);
         for (int i = 0; i < CODE_LENGTH; i++) {

@@ -8,16 +8,30 @@ spring:
     name: url-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/urlshortener
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      idle-timeout: 300000
-      max-lifetime: 1200000
-      connection-timeout: 20000
+    leader:
+      url: jdbc:postgresql://localhost:5432/urlshortener
+      username: postgres
+      password: postgres
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        pool-name: url-leader-pool
+        maximum-pool-size: 20
+        minimum-idle: 5
+        idle-timeout: 300000
+        max-lifetime: 1200000
+        connection-timeout: 20000
+    follower:
+      url: jdbc:postgresql://localhost:5432/urlshortener
+      username: postgres
+      password: postgres
+      driver-class-name: org.postgresql.Driver
+      hikari:
+        pool-name: url-follower-pool
+        maximum-pool-size: 15
+        minimum-idle: 5
+        idle-timeout: 300000
+        max-lifetime: 1200000
+        connection-timeout: 20000
 
   jpa:
     hibernate:
@@ -43,6 +57,27 @@ spring:
       port: 6379
       timeout: 2000
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        max.block.ms: 5000
+        request.timeout.ms: 5000
+        delivery.timeout.ms: 15000
+    consumer:
+      group-id: url-service-link-created
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.urlshortener.url.messaging"
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.urlshortener.url.messaging.LinkCreatedEvent
+        max.poll.records: 100
+
   cache:
     type: caffeine
 
@@ -50,6 +85,17 @@ app:
   url:
     base-url: http://localhost:8080
     code-pool-warm-size: 10000
+    snowflake:
+      worker-id-key: url:snowflake:worker-id
+      max-worker-id: 1023
+
+  kafka:
+    link-created-topic: link-created-events
+    link-created-dlq-topic: link-created-dlq
+    consumer:
+      batch-size: 500
+      max-wait-ms: 200
+      idempotency-ttl-hours: 24
 
   aws:
     endpoint-url: http://localhost:4566

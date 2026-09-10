@@ -1,6 +1,5 @@
 package com.urlshortener.url;
 
-import com.urlshortener.url.cache.BloomFilterService;
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnels;
 import org.junit.jupiter.api.Test;

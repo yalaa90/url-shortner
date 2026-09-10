@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
@@ -51,6 +52,7 @@ export class RedirectComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly config = inject(AppConfigService);
   private readonly router = inject(Router);
+  private readonly document = inject(DOCUMENT);
 
   ngOnInit(): void {
     const code = this.route.snapshot.paramMap.get('code');
@@ -67,7 +69,7 @@ export class RedirectComponent implements OnInit {
           if (response.status === 200 && response.body && typeof response.body === 'object') {
             const destination = (response.body as { data?: { originalUrl?: string } }).data?.originalUrl;
             if (destination) {
-              window.location.replace(destination);
+              this.document.defaultView?.location.replace(destination);
               return;
             }
           }

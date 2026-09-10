@@ -4,14 +4,22 @@ spring:
       on-profile: prod
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5432/urlshortener
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    leader:
+      url: jdbc:postgresql://${DB_LEADER_HOST:localhost}:5432/urlshortener
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
+    follower:
+      url: jdbc:postgresql://${DB_FOLLOWER_HOST:localhost}:5432/urlshortener
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
 app:
   aws:

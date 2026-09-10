@@ -45,7 +45,8 @@ existingSecret: url-shortener-secrets
 
 config:
   SPRING_PROFILES_ACTIVE: prod
-  DB_HOST: postgres-rds.default.svc.cluster.local
+  DB_LEADER_HOST: postgres-rds.default.svc.cluster.local
+  DB_FOLLOWER_HOST: postgres-rds-replica.default.svc.cluster.local
   DB_PORT: "5432"
   DB_NAME: urlshortener
   DB_USERNAME: urlshortener_app

@@ -27,4 +27,7 @@ public class CreateLinkRequest {
     private String customAlias;
 
     private Instant expiresAt;
+
+    @Size(max = 128, message = "Idempotency key must not exceed 128 characters")
+    private String idempotencyKey;
 }

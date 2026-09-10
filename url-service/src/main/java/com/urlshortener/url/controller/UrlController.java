@@ -2,7 +2,6 @@ package com.urlshortener.url.controller;
 
 import com.urlshortener.dto.ApiResponse;
 import com.urlshortener.idempotency.IdempotencyKey;
-import com.urlshortener.pagination.CursorPage;
 import com.urlshortener.url.dto.AliasCheckResponse;
 import com.urlshortener.url.dto.CreateLinkRequest;
 import com.urlshortener.url.dto.LinkResponse;

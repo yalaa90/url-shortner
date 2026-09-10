@@ -1,6 +1,7 @@
 package com.urlshortener.url.messaging;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.urlshortener.url.config.datasource.DataSourceContextHolder;
 import com.urlshortener.url.model.ClickEvent;
 import com.urlshortener.url.repository.ClickEventRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,8 @@ public class ClickEventPublisher {
         String eventId = UUID.randomUUID().toString();
 
         try {
-            // Persist event locally
+            // Persist event locally on the leader; runs on an async thread so set the context explicitly.
+            DataSourceContextHolder.setLeader();
             ClickEvent event = ClickEvent.builder()
                     .shortCode(shortCode)
                     .eventId(eventId)
@@ -41,6 +43,7 @@ public class ClickEventPublisher {
                     .createdAt(Instant.now())
                     .build();
             clickEventRepository.save(event);
+            DataSourceContextHolder.clear();
 
             // Send to SQS for analytics service
             Map<String, Object> message = Map.of(
@@ -70,6 +73,7 @@ public class ClickEventPublisher {
                     });
 
         } catch (Exception e) {
+            DataSourceContextHolder.clear();
             log.error("Error publishing click event: {}", e.getMessage(), e);
         }
     }

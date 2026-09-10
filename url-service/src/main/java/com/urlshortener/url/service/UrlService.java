@@ -4,17 +4,20 @@ import com.urlshortener.exception.ConflictException;
 import com.urlshortener.exception.ResourceNotFoundException;
 import com.urlshortener.url.cache.BloomFilterService;
 import com.urlshortener.url.cache.CacheService;
-import com.urlshortener.url.cache.CodePoolManager;
 import com.urlshortener.url.config.UrlConfig;
+import com.urlshortener.url.config.datasource.FollowerDataSource;
+import com.urlshortener.url.config.datasource.LeaderDataSource;
 import com.urlshortener.url.dto.CreateLinkRequest;
 import com.urlshortener.url.dto.LinkResponse;
 import com.urlshortener.url.dto.UpdateLinkRequest;
 import com.urlshortener.url.encoding.Base62Encoder;
+import com.urlshortener.url.encoding.SnowflakeIdGenerator;
+import com.urlshortener.url.messaging.LinkCreatedEvent;
+import com.urlshortener.url.messaging.LinkEventPublisher;
 import com.urlshortener.url.mapper.LinkMapper;
 import com.urlshortener.url.messaging.ClickEventPublisher;
 import com.urlshortener.url.model.ShortUrl;
 import com.urlshortener.url.repository.ShortUrlRepository;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +30,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -40,59 +41,48 @@ public class UrlService {
 
     private final ShortUrlRepository shortUrlRepository;
     private final Base62Encoder base62Encoder;
-    private final CodePoolManager codePoolManager;
+    private final SnowflakeIdGenerator snowflakeIdGenerator;
     private final BloomFilterService bloomFilterService;
     private final CacheService cacheService;
+    private final UrlResolutionService urlResolutionService;
     private final LinkMapper linkMapper;
     private final ClickEventPublisher clickEventPublisher;
-    private final Counter urlCreateCounter;
+    private final LinkEventPublisher linkEventPublisher;
     private final Timer urlRedirectTimer;
     private final UrlConfig urlConfig;
 
-    @Transactional
     public LinkResponse createLink(CreateLinkRequest request, UUID ownerId) {
         String code = resolveOrCreateCode(request.getCustomAlias());
+        Instant now = Instant.now();
 
-        ShortUrl shortUrl = ShortUrl.builder()
+        LinkCreatedEvent event = LinkCreatedEvent.builder()
+                .idempotencyKey(request.getIdempotencyKey() != null
+                        ? request.getIdempotencyKey() : UUID.randomUUID().toString())
                 .shortCode(code)
                 .originalUrl(request.getUrl())
                 .customAlias(request.getCustomAlias())
                 .ownerId(ownerId)
                 .active(true)
                 .expiresAt(request.getExpiresAt())
+                .createdAt(now)
                 .build();
 
-        shortUrl = shortUrlRepository.save(shortUrl);
         bloomFilterService.put(code);
-        urlCreateCounter.increment();
+        linkEventPublisher.publishLinkCreated(event);
 
-        log.info("Created short URL: code={}, owner={}", code, ownerId);
-        return buildLinkResponse(shortUrl);
+        log.info("Accepted link request, publishing event: code={}, owner={}", code, ownerId);
+        return buildOptimisticLinkResponse(event);
     }
 
-    @Cacheable(value = "urlResolution", key = "#code", unless = "#result == null")
-    @Transactional(readOnly = true)
-    public ShortUrl resolveUrl(String code) {
-        if (!bloomFilterService.mightContain(code)) {
-            log.debug("Bloom filter negative for code: {}", code);
-            return null;
-        }
-
-        return shortUrlRepository.findActiveCode(code, Instant.now())
-                .flatMap(shortUrlRepository::findByShortCode)
-                .orElse(null);
-    }
-
+    @FollowerDataSource
     public String redirectAndTrack(String code, String ipAddress, String userAgent, String referrer) {
         Timer.Sample sample = Timer.start();
         try {
-            ShortUrl shortUrl = resolveUrl(code);
-            if (shortUrl == null) {
-                throw new ResourceNotFoundException("ShortUrl", "code", code);
-            }
+            String originalUrl = urlResolutionService.resolveRedirectUrl(code)
+                    .orElseThrow(() -> new ResourceNotFoundException("ShortUrl", "code", code));
 
             clickEventPublisher.publishClickEvent(code, ipAddress, userAgent, referrer);
-            return shortUrl.getOriginalUrl();
+            return originalUrl;
         } finally {
             sample.stop(urlRedirectTimer);
         }
@@ -100,6 +90,7 @@ public class UrlService {
 
     @Cacheable(value = "linkDetails", key = "#code", unless = "#result == null")
     @Transactional(readOnly = true)
+    @FollowerDataSource
     public LinkResponse getLink(String code) {
         ShortUrl shortUrl = shortUrlRepository.findByShortCodeOrCustomAlias(code, code)
                 .orElseThrow(() -> new ResourceNotFoundException("ShortUrl", "code", code));
@@ -108,6 +99,7 @@ public class UrlService {
 
     @CacheEvict(value = {"urlResolution", "linkDetails"}, key = "#code")
     @Transactional
+    @LeaderDataSource
     public void deactivateLink(String code, UUID ownerId) {
         ShortUrl shortUrl = shortUrlRepository.findByShortCodeOrCustomAlias(code, code)
                 .orElseThrow(() -> new ResourceNotFoundException("ShortUrl", "code", code));
@@ -123,6 +115,7 @@ public class UrlService {
 
     @CachePut(value = "linkDetails", key = "#code")
     @Transactional
+    @LeaderDataSource
     public LinkResponse updateLink(String code, UpdateLinkRequest request, UUID ownerId) {
         ShortUrl shortUrl = shortUrlRepository.findByShortCodeOrCustomAlias(code, code)
                 .orElseThrow(() -> new ResourceNotFoundException("ShortUrl", "code", code));
@@ -150,6 +143,7 @@ public class UrlService {
     }
 
     @Transactional(readOnly = true)
+    @FollowerDataSource
     public Page<LinkResponse> getUserLinks(UUID ownerId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return shortUrlRepository.findByOwnerId(ownerId, pageable)
@@ -157,6 +151,7 @@ public class UrlService {
     }
 
     @Transactional(readOnly = true)
+    @FollowerDataSource
     public List<LinkResponse> getUserLinksWithCursor(UUID ownerId, String cursor, int size) {
         Pageable pageable = PageRequest.of(0, size + 1);
         List<ShortUrl> results;
@@ -172,6 +167,7 @@ public class UrlService {
                 .toList();
     }
 
+    @FollowerDataSource
     public boolean isAliasAvailable(String alias) {
         return !shortUrlRepository.existsByCustomAlias(alias) &&
                !shortUrlRepository.existsByShortCode(alias);
@@ -186,18 +182,24 @@ public class UrlService {
             return customAlias;
         }
 
-        String code = codePoolManager.borrowCode();
-        int attempts = 0;
-        while (shortUrlRepository.existsByShortCode(code) && attempts < 10) {
-            code = codePoolManager.borrowCode();
-            attempts++;
-        }
+        long id = snowflakeIdGenerator.nextId();
+        return base62Encoder.encodeCompact(id);
+    }
 
-        if (attempts >= 10) {
-            code = base62Encoder.generateRandom();
-        }
-
-        return code;
+    private LinkResponse buildOptimisticLinkResponse(LinkCreatedEvent event) {
+        String effectiveCode = event.getCustomAlias() != null
+                ? event.getCustomAlias() : event.getShortCode();
+        return LinkResponse.builder()
+                .id(null)
+                .shortCode(effectiveCode)
+                .shortUrl(urlConfig.getBaseUrl() + "/" + effectiveCode)
+                .originalUrl(event.getOriginalUrl())
+                .customAlias(event.getCustomAlias())
+                .active(event.isActive())
+                .createdAt(event.getCreatedAt())
+                .expiresAt(event.getExpiresAt())
+                .clickCount(0)
+                .build();
     }
 
     private LinkResponse buildLinkResponse(ShortUrl shortUrl) {

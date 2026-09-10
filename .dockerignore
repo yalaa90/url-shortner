@@ -1,0 +1,13 @@
+.git
+.gitignore
+**/target
+**/node_modules
+**/dist
+**/.angular
+docker-compose.yml
+docker-compose.override.yml
+*.md
+.idea
+.vscode
+*.iml
+.DS_Store
