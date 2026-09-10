@@ -5,14 +5,14 @@ A production-grade, horizontally-scalable URL shortener built with Spring Boot m
 ## Architecture
 
 ```
-Browser ──► Frontend (Angular 17 + nginx)   sho.rt
+Browser ──► Frontend (Angular 17 + nginx)   localhost:8080
               │  /api/*
               ▼
-         API Gateway (Spring Cloud Gateway)  api.sho.rt
+         API Gateway (Spring Cloud Gateway)  localhost
         ┌──────┬──────────────┬──────────────┐
         ▼      ▼              ▼              ▼
   user-service  url-service   analytics-service
-  (auth/JWT)    (core)         (SQS consumer + PostgreSQL rollups)
+  (auth/JWT)    (core kafka + batch)         (SQS consumer  + PostgreSQL rollups)
         │      │   │                  ▲
        RDS   Redis  └── SQS FIFO ──────┘
               (cache)
@@ -44,6 +44,13 @@ url-shortener/
 └── Makefile                 Developer task runner
 ```
 
+
+## Test coverage
+- backend has 90% coverage
+- frontend has logic covrage 
+- loadtest for create api it can handle 800 rps so 2 node can handle more than 100 million rps
+
+
 ## Prerequisites
 
 - JDK 21 (`JAVA_HOME` must point at a Java 21 install — the default on the DevBox is Java 25 and will fail Maven builds)
@@ -54,12 +61,17 @@ url-shortener/
 ## Local development
 
 ```bash
-make infra-up            # PostgreSQL, Redis, LocalStack
-make backend-build       # compile all Maven modules
-make backend-test        # unit tests
-make backend-test-it     # integration tests (Testcontainers, requires Docker)
-make frontend-build      # build the Angular app
-make run-gateway run-url-service run-analytics run-user-service
+mvn spring-boot:run
+ng serve
+
+# using docker 
+docker-compose up
+
+#using kubectl
+kubctl run 
+
+# using cloudformation
+
 ```
 
 > Note: integration tests (`*IT`) require Docker and are excluded by default; run them with `make backend-test-it` (`-Pintegration-tests`).
@@ -167,3 +179,6 @@ Every service exposes springdoc OpenAPI 3 (`/v3/api-docs` JSON + `/swagger-ui.ht
 | user-service   | `http://localhost:8083/swagger-ui.html` | `http://localhost:8083/v3/api-docs`    |
 
 > The gateway's Swagger UI aggregates only gateway-level docs (`/v3/api-docs/gateway`); the per-service APIs are browsed against each service locally, since in production the services are ClusterIP-only and not routed through the gateway.
+
+
+

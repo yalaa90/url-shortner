@@ -42,3 +42,4 @@ application-secrets*.yml
 *.pem
 *.jks
 credentials
+./opencode
