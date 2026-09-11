@@ -6,7 +6,6 @@ import com.urlshortener.url.cache.BloomFilterService;
 import com.urlshortener.url.cache.CacheService;
 import com.urlshortener.url.config.UrlConfig;
 import com.urlshortener.url.dto.CreateLinkRequest;
-import com.urlshortener.url.dto.LinkResponse;
 import com.urlshortener.url.dto.UpdateLinkRequest;
 import com.urlshortener.url.encoding.Base62Encoder;
 import com.urlshortener.url.encoding.SnowflakeIdGenerator;

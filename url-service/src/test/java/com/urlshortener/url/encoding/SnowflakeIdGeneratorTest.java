@@ -1,7 +1,6 @@
 package com.urlshortener.url.encoding;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
