@@ -180,15 +180,54 @@ services:
       timeout: 5s
       retries: 10
 
-  frontend:
+  shell-frontend:
     build:
       context: ./url-shortener-ui
-    container_name: url-shortener-frontend
+      dockerfile: Dockerfile.mfe
+      args:
+        MFE_NAME: shell
+    container_name: url-shortener-shell
     ports:
       - "4200:8080"
     depends_on:
       api-gateway:
         condition: service_healthy
+      auth-frontend:
+        condition: service_started
+      links-frontend:
+        condition: service_started
+      analytics-frontend:
+        condition: service_started
+
+  auth-frontend:
+    build:
+      context: ./url-shortener-ui
+      dockerfile: Dockerfile.mfe
+      args:
+        MFE_NAME: auth-remote
+    container_name: url-shortener-auth
+    ports:
+      - "4201:8080"
+
+  links-frontend:
+    build:
+      context: ./url-shortener-ui
+      dockerfile: Dockerfile.mfe
+      args:
+        MFE_NAME: links-remote
+    container_name: url-shortener-links
+    ports:
+      - "4202:8080"
+
+  analytics-frontend:
+    build:
+      context: ./url-shortener-ui
+      dockerfile: Dockerfile.mfe
+      args:
+        MFE_NAME: analytics-remote
+    container_name: url-shortener-analytics
+    ports:
+      - "4203:8080"
 
 volumes:
   postgres_data:

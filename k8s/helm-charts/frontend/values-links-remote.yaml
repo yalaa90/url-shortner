@@ -1,0 +1,12 @@
+# Values for the links MFE
+replicaCount: 2
+mfeName: links-remote
+
+image:
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/frontend-links-remote
+  tag: latest
+
+nameOverride: url-shortener-links
+
+ingress:
+  enabled: false

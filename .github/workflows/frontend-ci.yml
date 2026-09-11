@@ -12,8 +12,11 @@ on:
 
 jobs:
   build:
-    name: Lint, test & build Angular app
+    name: Lint, test & build Angular MFEs
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mfe: [shared-lib, auth-remote, links-remote, analytics-remote, shell]
     steps:
       - uses: actions/checkout@v4
 
@@ -28,22 +31,30 @@ jobs:
         run: npm ci
         working-directory: url-shortener-ui
 
-      - name: Build (production)
-        run: npm run build
+      - name: Build shared-lib
+        run: npx ng build shared-lib --configuration=production
+        if: matrix.mfe != 'shared-lib'
+        working-directory: url-shortener-ui
+
+      - name: Build ${{ matrix.mfe }}
+        run: npx ng build ${{ matrix.mfe }} --configuration=production
         working-directory: url-shortener-ui
 
       - name: Upload dist
         uses: actions/upload-artifact@v4
         with:
-          name: dist
-          path: url-shortener-ui/dist/url-shortener-ui
+          name: dist-${{ matrix.mfe }}
+          path: url-shortener-ui/dist/${{ matrix.mfe }}
           retention-days: 7
 
   publish:
-    name: Build frontend image & push to ECR
+    name: Build & push MFE images
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        mfe: [shell, auth-remote, links-remote, analytics-remote]
     steps:
       - uses: actions/checkout@v4
 
@@ -61,8 +72,14 @@ jobs:
         env:
           REGISTRY: ${{ steps.ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+          MFE_NAME: ${{ matrix.mfe }}
         run: |
-          IMAGE="$REGISTRY/url-shortener/frontend"
-          docker build -f Dockerfile -t "$IMAGE:$IMAGE_TAG" -t "$IMAGE:latest" .
+          IMAGE="$REGISTRY/url-shortener/frontend-${MFE_NAME}"
+          docker build \
+            -f url-shortener-ui/Dockerfile.mfe \
+            --build-arg MFE_NAME=${MFE_NAME} \
+            -t "$IMAGE:$IMAGE_TAG" \
+            -t "$IMAGE:latest" \
+            url-shortener-ui
           docker push "$IMAGE:$IMAGE_TAG"
           docker push "$IMAGE:latest"

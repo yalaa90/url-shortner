@@ -1,0 +1,12 @@
+# Values for the auth MFE
+replicaCount: 2
+mfeName: auth-remote
+
+image:
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/frontend-auth-remote
+  tag: latest
+
+nameOverride: url-shortener-auth
+
+ingress:
+  enabled: false

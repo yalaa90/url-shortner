@@ -4,13 +4,25 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:shell": "ng serve shell",
+    "start:auth": "ng serve auth-remote",
+    "start:links": "ng serve links-remote",
+    "start:analytics": "ng serve analytics-remote",
+    "start:mfe": "concurrently \"npm run start:shell\" \"npm run start:auth\" \"npm run start:links\" \"npm run start:analytics\"",
     "build": "ng build",
+    "build:shared": "ng build shared-lib",
+    "build:shell": "ng build shell",
+    "build:auth": "ng build auth-remote",
+    "build:links": "ng build links-remote",
+    "build:analytics": "ng build analytics-remote",
+    "build:all": "npm run build:shared && npm run build:auth && npm run build:links && npm run build:analytics && npm run build:shell",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "postinstall": "node scripts/patch-ngx-charts.mjs"
   },
   "private": true,
   "dependencies": {
+    "@angular-architects/module-federation": "^17.0.3",
     "@angular/animations": "^17.3.0",
     "@angular/cdk": "^17.3.10",
     "@angular/common": "^17.3.0",
@@ -33,17 +45,24 @@
     "zone.js": "~0.14.3"
   },
   "devDependencies": {
+    "@angular-architects/module-federation-tools": "^17.0.3",
     "@angular-devkit/build-angular": "^17.3.17",
     "@angular/cli": "^17.3.17",
     "@angular/compiler-cli": "^17.3.0",
     "@types/jasmine": "~5.1.0",
     "@types/qrcode": "^1.5.6",
+    "concurrently": "^8.2.2",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.4.2"
+    "ng-packagr": "^17.3.0",
+    "ngx-build-plus": "^17.0.0",
+    "typescript": "~5.4.2",
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.2"
   }
 }

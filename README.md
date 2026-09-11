@@ -5,7 +5,7 @@ A production-grade, horizontally-scalable URL shortener built with Spring Boot m
 ## Architecture
 
 ```
-Browser ──► Frontend (Angular 17 + nginx)   localhost:8080
+Browser ──► Shell (Angular 17 MFE host + nginx)   localhost:4200
               │  /api/*
               ▼
          API Gateway (Spring Cloud Gateway)  localhost
@@ -22,7 +22,7 @@ Browser ──► Frontend (Angular 17 + nginx)   localhost:8080
 - **analytics-service** — consumes click events, aggregates click counts by day/shortCode/referrer/country, exposes analytics endpoints.
 - **user-service** — registration/login, RS256 JWT issuing + validation, RBAC.
 - **api-gateway** — routes `/api/v1/**`, global JWT validation filter, rate limiting, `X-Owner-Id` propagation.
-- **frontend** — Angular 17 + NgRx + Angular Material; dashboard, link management, QR codes, analytics charts (ngx-charts).
+- **frontend** — Angular 17 **micro-frontend workspace** (Module Federation): a `shell` host (layout, auth state, settings, redirect) that lazy-loads `auth`, `links` and `analytics` remotes sharing a common `@shared-lib`. See [url-shortener-ui/README.md](url-shortener-ui/README.md).
 
 ## Repository layout
 
@@ -33,14 +33,14 @@ url-shortener/
 ├── analytics-service/       Click ingestion + aggregation
 ├── user-service/            Auth + users
 ├── api-gateway/             Spring Cloud Gateway
-├── url-shortener-ui/        Angular SPA
+├── url-shortener-ui/        Angular 17 MFE workspace (shell + auth/links/analytics remotes + shared-lib)
 ├── k8s/
 │   ├── helm-charts/         Per-service Helm charts (+ redis, frontend)
 │   └── argocd/              App-of-apps, AppProject, secrets example
 ├── infra/terraform/         VPC, EKS, RDS, ElastiCache, SQS, ECR, IRSA (modules)
 ├── k8s/observability/       kube-prometheus-stack, Tempo, ServiceMonitors, alerts, dashboards
 ├── .github/workflows/       Backend/Frontend CI + Terraform PR plan/apply
-├── docker-compose.yml       Local infra (PostgreSQL, Redis, LocalStack)
+├── docker-compose.yml       Full local stack: infra + backend services + 4 frontend MFEs
 └── Makefile                 Developer task runner
 ```
 
@@ -62,7 +62,7 @@ url-shortener/
 
 ```bash
 mvn spring-boot:run
-ng serve
+npm run start:mfe     # within url-shortener-ui/ — runs all 4 frontend MFEs (see its README)
 
 # using docker 
 docker-compose up
@@ -109,7 +109,7 @@ kubectl apply -f k8s/argocd/applications.yaml
 ## CI/CD
 
 - **Backend CI**: compile + unit tests on PR; Testcontainers integration tests (Docker); on `main` build JVM + Docker images → ECR.
-- **Frontend CI**: `npm ci`, production build, nginx image → ECR.
+- **Frontend CI**: matrix build of all 5 projects (`shared-lib` + 4 MFEs); on `main` build & push one Docker image per MFE → ECR (`url-shortener/frontend-<mfe>`).
 - **Terraform**: `terraform plan` reported as a PR comment; auto-`apply` on `main`.
 
 ## Observability

@@ -1,0 +1,101 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="diagram-cicd" name="CI/CD Architecture">
+    <mxGraphModel dx="1100" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1450" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- GitHub / triggers -->
+        <mxCell id="10" value="GitHub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="260" height="620" as="geometry" />
+        </mxCell>
+        <mxCell id="11" value="Events &amp; path filters (→ main):&#10;• backend: push/PR on shared-lib, url-service, api-gateway, analytics-service, user-service, pom.xml&#10;• frontend: url-shortener-ui/**&#10;• infra: infra/terraform/**&#10;• PRs merge into main merge queue" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=11;align=left;" vertex="1" parent="10">
+          <mxGeometry x="60" y="110" width="220" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="12" value="PR comment:&#10;terraform plan output posted via&#10;actions/github-script@v7 (collapsible)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=11;align=left;" vertex="1" parent="10">
+          <mxGeometry x="60" y="420" width="220" height="100" as="geometry" />
+        </mxCell>
+
+        <!-- Workflows -->
+        <mxCell id="20" value="GitHub Actions — 3 workflows (.github/workflows)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="40" width="720" height="920" as="geometry" />
+        </mxCell>
+        <mxCell id="21" value="backend-ci.yml&#10;1. build-and-test — JDK 21 (Temurin) · mvn verify -DskipITs · surefire reports (14d)&#10;2. integration-tests (needs 1) — DinD docker:27 · mvn verify -Pintegration-tests (Testcontainers)&#10;3. publish (main only · matrix url/analytics/user/api-gateway): OIDC → ECR login → mvn package → docker build → push :sha + :latest → curl ArgoCD /argocd-image-updater.argoproj.io/image-update=true (|| true)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=11;align=left;" vertex="1" parent="20">
+          <mxGeometry x="390" y="100" width="660" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="22" value="frontend-ci.yml&#10;1. build — matrix ×5: shared-lib · auth-remote · links-remote · analytics-remote · shell — Node 22 · npm ci → per-project build (shared-lib first for non-lib) → upload dist (7d)&#10;2. publish (main only · matrix ×4: shell/auth/links/analytics): OIDC → ECR login → Dockerfile.mfe --build-arg MFE_NAME=… → build → push :sha + :latest&#10;&#10;ECR images: url-shortener/frontend-shell · frontend-auth-remote · frontend-links-remote · frontend-analytics-remote" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=11;align=left;" vertex="1" parent="20">
+          <mxGeometry x="390" y="360" width="660" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="23" value="terraform.yml&#10;1. plan (PR + push) — OIDC role github-actions-terraform · terraform fmt -check → init → validate → plan -out=tfplan → PR comment for PRs&#10;2. apply (main only) — init → plan → apply -auto-approve&#10;ENV: TF_VERSION 1.9.8 · TF_WORKSPACE prod · id-token: write + pull-requests: write" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=11;align=left;" vertex="1" parent="20">
+          <mxGeometry x="390" y="660" width="660" height="220" as="geometry" />
+        </mxCell>
+
+        <!-- ECR -->
+        <mxCell id="30" value="ECR (AWS) — us-east-1&#10;url-shortener/*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="120" width="360" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="31" value="Backend images:&#10;url-service · analytics-service · user-service · api-gateway&#10;&#10;Frontend images:&#10;frontend-shell · frontend-auth-remote · frontend-links-remote · frontend-analytics-remote&#10;&#10;Tagging: &lt;full sha&gt; + latest (dual-tag on main)&#10;Lifecycle: keep last 30 · MUTABLE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=left;" vertex="1" parent="30">
+          <mxGeometry x="1180" y="190" width="320" height="330" as="geometry" />
+        </mxCell>
+
+        <!-- ArgoCD -->
+        <mxCell id="40" value="ArgoCD + Image Updater (k8s/argocd)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="120" width="380" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="41" value="Applications (project url-shortener · ns url-shortener):&#10;redis · url-service · analytics-service · user-service · api-gateway · frontend&#10;&#10;Image Updater (all except redis):&#10;update-strategy: digest · registry: ecr&#10;helm.image-spec: image.tag · write-back-method: git&#10;&#10;Sync policy: automated · prune · selfHeal · ServerSideApply" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;align=left;" vertex="1" parent="40">
+          <mxGeometry x="1600" y="190" width="340" height="330" as="geometry" />
+        </mxCell>
+
+        <!-- OIDC -->
+        <mxCell id="50" value="AWS IAM — GitHub OIDC federation (no static keys)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="740" width="800" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="51" value="Roles (arn:aws:iam::012345678901:role/…):&#10;• github-actions-eks — CI publish (backend + frontend): ECR login + push&#10;• github-actions-terraform — infra plan/apply&#10;&#10;Auth flow: GitHub OIDC token → aws-actions/configure-aws-credentials@v4 (assume-role) → aws-actions/amazon-ecr-login@v2&#10;Job permission: id-token: write" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=left;" vertex="1" parent="50">
+          <mxGeometry x="1180" y="800" width="760" height="175" as="geometry" />
+        </mxCell>
+
+        <!-- EKS -->
+        <mxCell id="60" value="EKS — target environment (ns url-shortener)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="1080" width="800" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="61" value="Workloads managed by Helm + ArgoCD:&#10;backend ×4 (api-gateway · url-service · analytics-service · user-service)&#10;frontend ×4 releases (shell + 3 remotes) · redis&#10;HPA autoscaling (2–15 replicas @70%)&#10;&#10;Rollout: Image Updater detects new ECR digest → commits image.tag to git → ArgoCD auto-sync → rolling update" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=left;" vertex="1" parent="60">
+          <mxGeometry x="1180" y="1140" width="760" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- Edges -->
+        <mxCell id="90" value="push / pull_request" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="10" target="20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="91" value="push (backend · :sha + :latest)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="21" target="30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="92" value="push (frontend · :sha + :latest)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="22" target="30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="93" value="OIDC assume-role · ECR login" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="20" target="50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="94" value="Image Updater: digest watch → git write-back" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="30" target="40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="95" value="PATCH image-update=true (backend publish, tolerates failure)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="21" target="40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="96" value="auto-sync (Helm manifests)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="40" target="60">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="97" value="terraform plan/apply (infra)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="23" target="50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="98" value="applies cluster infra" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="50" target="60">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="70" value="Legend: strong = artifact/push flow · dashed = auth/control flow&#10;&#10;Overrides &amp; notes:&#10;• shared-lib is built but NOT published (library only)&#10;• frontend 'frontend' ArgoCD app deploys the chart 4× via values-shell / values-auth-remote / values-links-remote / values-analytics-remote&#10;• redis chart is not CI-built (no Image Updater)&#10;• Terraform also posts plan as PR comment (see left)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="40" y="740" width="820" height="230" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

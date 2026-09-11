@@ -1,0 +1,12 @@
+# Values for the analytics MFE
+replicaCount: 2
+mfeName: analytics-remote
+
+image:
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/frontend-analytics-remote
+  tag: latest
+
+nameOverride: url-shortener-analytics
+
+ingress:
+  enabled: false

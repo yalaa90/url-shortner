@@ -1,0 +1,111 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="diagram-infrastructure" name="Infrastructure Architecture">
+    <mxGraphModel dx="1200" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1750" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Terraform -->
+        <mxCell id="10" value="Terraform (infra/terraform)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="380" height="820" as="geometry" />
+        </mxCell>
+        <mxCell id="11" value="state-bootstrap (applied once)&#10;S3 url-shortener-tfstate (AES256 · versioned · public blocked)&#10;DynamoDB url-shortener-tfstate-lock (LockID · PAY_PER_REQUEST)&#10;backend: environments/prod/backend.tfvars" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=left;" vertex="1" parent="10">
+          <mxGeometry x="60" y="120" width="340" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="12" value="main.tf — modules (resource prefix url-shortener-{env}, us-east-1a/b/c):&#10;vpc — 3 public / 3 private / 3 db subnets · IGW · NAT ×3 · EIPs&#10;eks — cluster url-shortener-{env} (K8s 1.30) · general m5.large 3–12 + spot 0–10 · OIDC provider · addons vpc-cni/coredns/kube-proxy/ebs-csi&#10;rds — Postgres 16.3 master + replica · Multi-AZ · gp3 · SecretsManager creds&#10;elasticache — Redis 7.1 · cache.t4g.micro ×2 · encrypted&#10;sqs — url-shortener-click-events.fifo (+ .fifo-dlq, maxReceive 5)&#10;ecr — 5 repos url-shortener/{url,analytics,user,api-gateway,frontend} · keep last 30&#10;iam — IRSA roles (publisher · consumer · secrets-reader)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=left;" vertex="1" parent="10">
+          <mxGeometry x="60" y="250" width="340" height="240" as="geometry" />
+        </mxCell>
+        <mxCell id="13" value="Workflow (terraform.yml):&#10;PR: terraform fmt -check → init → validate → plan → PR comment&#10;push main: plan → apply -auto-approve&#10;TF 1.9.8 · workspace prod · OIDC role github-actions-terraform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=left;" vertex="1" parent="10">
+          <mxGeometry x="60" y="510" width="340" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- CloudFormation -->
+        <mxCell id="20" value="CloudFormation (alternative IaC — infra/cloudformation)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="920" width="380" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="21" value="main.yaml — 7 nested stacks (+dev-params.json):&#10;NetworkStack — vpc · IGW · 3+3+3 subnets · NAT×3&#10;EksStack — cluster · 2 node groups · addons · OIDC provider&#10;RdsStack — postgres 16.3 · SG (5432) · Secret&#10;ElasticacheStack — redis 7.1 · SG (6379)&#10;SqsStack — click-events.fifo + dlq&#10;EcrStack — 5 repos (scan-on-push, keep 30)&#10;IamStack — 3 IRSA roles&#10;Outputs mirror Terraform outputs (compatible Helm/ArgoCD)&#10;+ serviceaccounts.yaml: 4 SAs with IRSA annotations&#10;Validate: cfn-lint (0 errors)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=left;" vertex="1" parent="20">
+          <mxGeometry x="60" y="980" width="340" height="330" as="geometry" />
+        </mxCell>
+
+        <!-- AWS -->
+        <mxCell id="30" value="AWS us-east-1 (Terraform-provisioned)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="60" width="1500" height="740" as="geometry" />
+        </mxCell>
+        <mxCell id="31" value="VPC&#10;url-shortener-{env}-vpc&#10;IGW · NAT ×3 · EIPs · route tables&#10;3 public + 3 private + 3 db subnets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="30">
+          <mxGeometry x="500" y="140" width="430" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="32" value="EKS (eks module)&#10;url-shortener-{env} · K8s 1.30&#10;node groups: general ON_DEMAND m5.large 3–12 · spot 0–10&#10;addons: vpc-cni · coredns · kube-proxy · ebs-csi&#10;OIDC provider · access entries" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="30">
+          <mxGeometry x="970" y="140" width="440" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="33" value="RDS (rds module)&#10;url-shortener-{env}-postgres (+ replica)&#10;PostgreSQL 16.3 · Multi-AZ · gp3 · 50GB&#10;db=urlshortener · SecretsManager:&#10;url-shortener-{env}-postgres-credentials" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="30">
+          <mxGeometry x="1450" y="140" width="470" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="34" value="ElastiCache (elasticache)&#10;url-shortener-{env}-redis · Redis 7.1&#10;cache.t4g.micro ×2 · encryption in-transit + at-rest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="30">
+          <mxGeometry x="500" y="330" width="430" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="35" value="ECR (ecr module) — 5 repos&#10;url-shortener/{url-service, analytics-service, user-service, api-gateway, frontend}&#10;scan-on-push · lifecycle keep last 30 · MUTABLE tags" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="30">
+          <mxGeometry x="970" y="330" width="440" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="36" value="SQS (sqs module)&#10;url-shortener-click-events.fifo&#10;+ click-events.fifo-dlq (redrive maxReceiveCount=5)&#10;content-based dedup · 60s visibility timeout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;" vertex="1" parent="30">
+          <mxGeometry x="1450" y="330" width="470" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="37" value="IAM / IRSA (iam module)&#10;roles:&#10;• url-shortener-{env}-url-service-sqs-publisher → SA url-service (SQS send)&#10;• url-shortener-{env}-analytics-service-sqs-consumer → SA analytics-service (SQS receive/delete)&#10;• url-shortener-{env}-secrets-reader → SAs user-service · api-gateway (SecretsManager GetSecretValue)&#10;ServiceAccounts (namespace url-shortener): url-service · analytics-service · user-service · api-gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=left;" vertex="1" parent="30">
+          <mxGeometry x="500" y="500" width="910" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="38" value="⚠ Gap — Kafka is NOT in IaC&#10;url-service uses Kafka (spring-kafka) for&#10;link-created-events + DLQ. No MSK/managed&#10;broker provisioned on AWS → async create&#10;path only works in docker-compose." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#FFCCCC;strokeColor=#B85450;fontSize=11;align=left;" vertex="1" parent="30">
+          <mxGeometry x="1450" y="500" width="470" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- EKS workloads -->
+        <mxCell id="50" value="EKS — workloads (ns url-shortener) · ArgoCD GitOps · observability (ns monitoring)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="840" width="1500" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="51" value="Deployments (Helm charts · HPA @70% CPU):&#10;api-gateway (2–10) · url-service (3–15) · analytics-service (2–10) · user-service (2–8)&#10;frontend chart ×4 releases: shell (2–8) + auth-remote + links-remote + analytics-remote — ingress enabled only on shell&#10;redis (chart, 6379)&#10;ServiceAccounts bound via IRSA (emptyDir-free secrets via SecretsManager)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=left;" vertex="1" parent="50">
+          <mxGeometry x="500" y="900" width="720" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="52" value="Networking:&#10;ingress-nginx + cert-manager (cluster-issuer letsencrypt-prod)&#10;sho.rt → frontend (shell) · api.sho.rt → api-gateway · grafana.sho.rt → grafana&#10;TLS secrets: sho-rt-tls · api-sho-rt-tls" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=left;" vertex="1" parent="50">
+          <mxGeometry x="1260" y="900" width="660" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="53" value="ArgoCD (app-of-apps — k8s/argocd):&#10;Applications: redis · url-service · analytics-service · user-service · api-gateway · frontend&#10;Image Updater on all except redis (strategy digest · write-back git)&#10;syncPolicy: auto · prune · selfHeal · ServerSideApply · CreateNamespace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;align=left;" vertex="1" parent="50">
+          <mxGeometry x="1260" y="1060" width="660" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="54" value="Observability (k8s/observability — ns monitoring):&#10;kube-prometheus-stack 65.5.1 — Prometheus 15d/40Gi · Grafana (basic auth) · Alertmanager → Slack #ops&#10;tempo 1.10.6 — OTLP gRPC/HTTP · local storage&#10;ServiceMonitor url-shortener-services → /actuator/prometheus (4 backend svcs, 30s)&#10;5 × PrometheusRule alerts · dashboards: Overview + Traces (Tempo datasource)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D6EAF8;strokeColor=#2980B9;fontSize=11;align=left;" vertex="1" parent="50">
+          <mxGeometry x="500" y="1100" width="720" height="190" as="geometry" />
+        </mxCell>
+
+        <!-- docker compose -->
+        <mxCell id="60" value="Local dev — docker compose (docker-compose.yml · full stack)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;dashed=1;verticalAlign=top;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1380" width="1920" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="61" value="postgres 16-alpine·5432· urlshortener (3 schemas)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="60">
+          <mxGeometry x="80" y="1440" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="62" value="redis 7-alpine&#10;6379 · 256MB allkeys-lru" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="60">
+          <mxGeometry x="280" y="1440" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="63" value="localstack 3.4&#10;4566 · sqs,sns,kms,secretsmanager" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="60">
+          <mxGeometry x="480" y="1440" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="64" value="zookeeper 2181·&#10;kafka 9092 (auto-create topics)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="60">
+          <mxGeometry x="680" y="1440" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="65" value="pgadmin 5050→80" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="60">
+          <mxGeometry x="890" y="1440" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="66" value="Backend apps (SPRING_PROFILES_ACTIVE=docker):&#10;url-service 8081 · analytics-service 8082 · user-service 8083 · api-gateway 8080&#10;(api-gateway depends on redis + all 3 services)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=left;" vertex="1" parent="60">
+          <mxGeometry x="80" y="1530" width="620" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="67" value="Frontend MFEs (Dockerfile.mfe):&#10;shell-frontend 4200 · auth-frontend 4201 · links-frontend 4202 · analytics-frontend 4203&#10;shell nginx: /remote/* → remote containers · /api/ → api-gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=11;align=left;" vertex="1" parent="60">
+          <mxGeometry x="740" y="1530" width="660" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="70" value="provision" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="10" target="30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="71" value="deploy manifests (Helm)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="30" target="50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

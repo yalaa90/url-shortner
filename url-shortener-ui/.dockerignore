@@ -1,0 +1,9 @@
+node_modules
+dist
+out-tsc
+.git
+.gitignore
+*.log
+.tmp
+.angular
+coverage

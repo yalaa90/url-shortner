@@ -1,0 +1,123 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram id="diagram-backend" name="Backend Architecture">
+    <mxGraphModel dx="1000" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1550" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="21" value="Browser / End user" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="220" width="140" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="41" value="API Gateway (Spring Cloud Gateway) — :8080&#10;Routes:&#10; • /api/v1/links/** → url-service:8081&#10; • /api/v1/analytics/** → analytics-service:8082&#10; • /api/v1/users/** → user-service:8083&#10; • /api/v1/auth/** → user-service:8083 (docker profile only)&#10; • /{code} → SetPath=/api/v1/links/{code} (public redirect)&#10;Filters (global, ordered): CorrelationId → JWT (presence only) → Bucket4j rate-limit&#10;(100 anon / 1000 auth req-min; 429) · CircuitBreakers → /fallback/&lt;svc&gt; (503)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="240" y="150" width="400" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="42" value="url-service :8081&#10;CREATE PATH — POST /api/v1/links:&#10; @IdempotencyKey (Redis idempotency:&lt;key&gt;, 24h)&#10; bloom.put(code) → Snowflake (worker-id via Redis INCR) → Base62 code&#10; publish LinkCreatedEvent → Kafka · optimistic response&#10; batch consumer (concurrency 3 · batch 500 / 200ms · manual ack) → short_urls&#10; dedupe link:created:dedup:&lt;idempotencyKey&gt; (24h) · failures → DLQ&#10;REDIRECT PATH — GET /api/v1/links/{code}:&#10; Redis url:cache:&lt;code&gt; (1h) → Bloom negative? 404 → follower-DB findActiveCode → 301 Location&#10; @Async persist click_events + publish SQS click-events (FIFO, group+dedup = eventId)&#10;Datasource routing: @LeaderDataSource (writes) vs @FollowerDataSource (reads)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="240" y="470" width="430" height="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="43" value="analytics-service :8082&#10;SQS consumer: poll 500ms · max 10 · wait 5s&#10; dedupe Redis analytics:dedup:&lt;eventId&gt; (24h) / raw_click_events.event_id&#10; save RawClickEvent(processed=true) → delete message&#10;Aggregation (@Scheduled + JdbcTemplate — NOT Spring Batch):&#10; hourly_rollups — cron 5 0 * * * * (each hour)&#10; daily_compactions — cron 15 0 0 * * * (00:15 daily)&#10;Read: GET /api/v1/analytics/{code}?days=30 → rollups + raw fallback (Caffeine 15m)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="240" y="820" width="430" height="230" as="geometry" />
+        </mxCell>
+
+        <mxCell id="44" value="user-service :8083&#10;POST /api/v1/auth/token (OAuth2 password grant, client_id=url-shortener-ui)&#10; RS256 sign (jjwt) · 1h expiry · claims subjectId/email/name/realm_access.roles&#10;JWT validation: verifyWith(RSAPublicKey) + requireIssuer(...)&#10;Security: /users → ROLE_ADMIN · /users/** → USER|ADMIN|API_CLIENT&#10;DB: app_users · user_roles (seed demo@example.com)&#10;No Kafka · no SQS · no Redis" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="240" y="1090" width="430" height="160" as="geometry" />
+        </mxCell>
+
+        <!-- Data stores -->
+        <mxCell id="51" value="PostgreSQL 16 (RDS) — one db, 3 schemas&#10;db=urlshortener&#10;url_service: short_urls · click_events&#10;analytics_service: raw_click_events · hourly_rollups · daily_compactions&#10;user_service: app_users · user_roles" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="760" y="160" width="430" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="52" value="Redis (ElastiCache / local 7-alpine)&#10;url:cache:&lt;code&gt; (1h) · url:bloom:filter&#10;url:snowflake:worker-id (INCR) · link:created:dedup:&lt;k&gt; (24h)&#10;idempotency:&lt;key&gt; (24h) · analytics:dedup:&lt;eventId&gt; (24h)&#10;Caffeine (in-app): linkDetails/urlResolution 5m · analytics 15m" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="760" y="360" width="430" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="53" value="SQS FIFO click-events&#10;url-shortener-click-events.fifo&#10;messageGroupId=click-events · dedupId=eventId&#10;DLQ: click-events.fifo-dlq (maxReceiveCount=5)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="760" y="580" width="430" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="54" value="Kafka (compose-only — no AWS broker)&#10;topic link-created-events (6 partitions / 1 replica)&#10;consumer group url-service-link-created (concurrency 3)&#10;DLQ: link-created-dlq" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="760" y="740" width="430" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- Flow notes -->
+        <mxCell id="71" value="⊕ CREATE flow (async write path)&#10;POST /api/v1/links → idempotency check → bloom put + Snowflake→Base62 code →&#10;LinkCreatedEvent on Kafka → immediate optimistic response. Batch consumer persists&#10;short_urls with idempotency dedupe; failures go to the DLQ." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#FFFFCC;strokeColor=#D6B656;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="150" width="600" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="72" value="⇒ REDIRECT flow (public, no auth)&#10;GET /{code} → (nginx) → gateway SetPath → Redis url:cache hit? → 301 | Bloom negative → 404 |&#10;follower-DB active code found → cache 1h → 301. Then @Async: click_events + SQS click-events.fifo." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#FFFFCC;strokeColor=#D6B656;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="300" width="600" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="73" value="⇄ ANALYTICS flow&#10;SQS poll click-events → dedupe → RawClickEvent. @Scheduled rollups feed&#10;hourly_rollups + daily_compactions; read path combines them with raw fallback." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#FFFFCC;strokeColor=#D6B656;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="450" width="600" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="74" value="Notes &amp; caveats (code vs README)&#10;• No /auth/register — only POST /auth/token&#10;• Gateway JWT filter checks header presence only (signature verified in services)&#10;• Gateway does NOT derive X-Owner-Id; services default to 00000000-0000-0000-0000-000000000001&#10;• 'Code-pool pre-generation' is config-only — live path is Snowflake + Base62" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#FFCCCC;strokeColor=#B85450;fontSize=11;align=left;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="590" width="600" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- shared-lib -->
+        <mxCell id="60" value="shared-lib (Java multi-module library — wired into all services + gateway)&#10;Entities: BaseEntity · AuditableEntity (JPA auditing)&#10;IdempotencyAspect (@IdempotencyKey) → Redis idempotency:&lt;key&gt; (24h TTL, caches 2xx via header Idempotency-Key)&#10;CorrelationIdFilter → X-Correlation-Id + MDC (correlationId/traceId)&#10;DTOs: ApiResponse&lt;T&gt; · CursorPage&lt;T&gt; · Validation @ValidUrl (http/https)&#10;Exceptions: GlobalExceptionHandler (RFC 7807 ProblemDetail) · ResourceNotFound · Conflict&#10;MetricsConfig: url.redirect.count · url.create.count · cache.hit/miss.count · url.redirect.duration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=11;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="760" width="600" height="170" as="geometry" />
+        </mxCell>
+
+        <mxCell id="80" value="Ports (local dev / compose): url-service 8081 · analytics-service 8082 · user-service 8083 · api-gateway 8080 · Kafka 9092 · SQS LocalStack 4566 · Postgres 5432 · Redis 6379" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="960" width="600" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Edges -->
+        <mxCell id="30" value="GET /{code} · authentication" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=11;" edge="1" parent="1" source="21" target="41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="31" value="/api/v1/links/**" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="41" target="42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="32" value="/api/v1/analytics/**" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="41" target="43">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="33" value="/api/v1/users/** · /api/v1/auth/**" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="41" target="44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="34" value="redirect: /{code} → SetPath links/{code}" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="41" target="42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="35" value="url_service schema" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="42" target="51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="36" value="analytics_service schema" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="43" target="51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="37" value="user_service schema" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="44" target="51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="38" value="cache · bloom · snowflake · dedup · idempotency" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="42" target="52">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="39" value="dedup" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="43" target="52">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="45" value="publish click events (FIFO · @Async)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="42" target="53">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="46" value="receive/poll (500ms) · delete on success" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="43" target="53">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="47" value="publish LinkCreatedEvent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="42" target="54">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="48" value="batch consume → short_urls (failures → DLQ)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="54" target="42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="49" value="shared-lib" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="60" target="41">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="55" value="shared-lib" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="60" target="42">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="56" value="shared-lib" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="60" target="43">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="57" value="shared-lib" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;dashed=1;strokeWidth=1.5;fontSize=10;" edge="1" parent="1" source="60" target="44">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

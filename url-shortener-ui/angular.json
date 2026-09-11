@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "url-shortener-ui": {
+    "shell": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -19,43 +19,135 @@
         "@schematics/angular:directive": {
           "skipTests": true
         },
-        "@schematics/angular:guard": {
-          "skipTests": true
-        },
-        "@schematics/angular:interceptor": {
-          "skipTests": true
-        },
         "@schematics/angular:pipe": {
-          "skipTests": true
-        },
-        "@schematics/angular:resolver": {
           "skipTests": true
         },
         "@schematics/angular:service": {
           "skipTests": true
         }
       },
-      "root": "",
-      "sourceRoot": "src",
+      "root": "projects/shell",
+      "sourceRoot": "projects/shell/src",
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "ngx-build-plus:browser",
           "options": {
-            "outputPath": "dist/url-shortener-ui",
-            "index": "src/index.html",
-            "main": "src/main.ts",
+            "extraWebpackConfig": "projects/shell/webpack.config.js",
+            "outputPath": "dist/shell",
+            "index": "projects/shell/src/index.html",
+            "main": "projects/shell/src/main.ts",
             "polyfills": "zone.js",
-            "tsConfig": "tsconfig.app.json",
+            "tsConfig": "projects/shell/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              "src/favicon.ico",
-              "src/assets"
+              "projects/shell/src/favicon.ico",
+              "projects/shell/src/assets"
             ],
             "styles": [
-              "src/styles.scss"
+              "projects/shell/src/styles.scss"
+            ],
+            "scripts": [],
+            "commonChunk": false
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "3mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kb",
+                  "maximumError": "8kb"
+                }
+              ],
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "projects/shell/src/environments/environment.ts",
+                  "with": "projects/shell/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "ngx-build-plus:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "shell:build:production"
+            },
+            "development": {
+              "buildTarget": "shell:build:development"
+            }
+          },
+          "defaultConfiguration": "development",
+          "options": {
+            "extraWebpackConfig": "projects/shell/webpack.config.js"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ],
+            "tsConfig": "projects/shell/tsconfig.spec.json",
+            "karmaConfig": "projects/shell/karma.conf.js",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              "projects/shell/src/favicon.ico",
+              "projects/shell/src/assets"
+            ],
+            "styles": [
+              "projects/shell/src/styles.scss"
             ],
             "scripts": []
+          }
+        }
+      }
+    },
+    "auth-remote": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss",
+          "skipTests": true
+        },
+        "@schematics/angular:service": {
+          "skipTests": true
+        }
+      },
+      "root": "projects/auth-remote",
+      "sourceRoot": "projects/auth-remote/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "ngx-build-plus:browser",
+          "options": {
+            "extraWebpackConfig": "projects/auth-remote/webpack.config.js",
+            "outputPath": "dist/auth-remote",
+            "index": "projects/auth-remote/src/index.html",
+            "main": "projects/auth-remote/src/main.ts",
+            "polyfills": "zone.js",
+            "tsConfig": "projects/auth-remote/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [],
+            "styles": [
+              "projects/auth-remote/src/styles.scss"
+            ],
+            "scripts": [],
+            "commonChunk": false
           },
           "configurations": {
             "production": {
@@ -64,11 +156,6 @@
                   "type": "initial",
                   "maximumWarning": "1mb",
                   "maximumError": "2mb"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
                 }
               ],
               "outputHashing": "all"
@@ -82,48 +169,187 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular-devkit/build-angular:dev-server",
+          "builder": "ngx-build-plus:dev-server",
+          "options": {
+            "port": 4201,
+            "extraWebpackConfig": "projects/auth-remote/webpack.config.js"
+          },
           "configurations": {
             "production": {
-              "buildTarget": "url-shortener-ui:build:production"
+              "buildTarget": "auth-remote:build:production"
             },
             "development": {
-              "buildTarget": "url-shortener-ui:build:development"
+              "buildTarget": "auth-remote:build:development"
             }
           },
           "defaultConfiguration": "development"
+        }
+      }
+    },
+    "links-remote": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss",
+          "skipTests": true
         },
-        "extract-i18n": {
-          "builder": "@angular-devkit/build-angular:extract-i18n",
+        "@schematics/angular:service": {
+          "skipTests": true
+        }
+      },
+      "root": "projects/links-remote",
+      "sourceRoot": "projects/links-remote/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "ngx-build-plus:browser",
           "options": {
-            "buildTarget": "url-shortener-ui:build"
-          }
-        },
-        "test": {
-          "builder": "@angular-devkit/build-angular:karma",
-          "options": {
-            "polyfills": [
-              "zone.js",
-              "zone.js/testing"
-            ],
-            "tsConfig": "tsconfig.spec.json",
-            "karmaConfig": "karma.conf.js",
-            "codeCoverage": true,
-            "codeCoverageExclude": [
-              "**/main.ts",
-              "**/app.routes.ts",
-              "**/*.routes.ts"
-            ],
+            "extraWebpackConfig": "projects/links-remote/webpack.config.js",
+            "outputPath": "dist/links-remote",
+            "index": "projects/links-remote/src/index.html",
+            "main": "projects/links-remote/src/main.ts",
+            "polyfills": "zone.js",
+            "tsConfig": "projects/links-remote/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
-            "assets": [
-              "src/favicon.ico",
-              "src/assets"
-            ],
+            "assets": [],
             "styles": [
-              "src/styles.scss"
+              "projects/links-remote/src/styles.scss"
             ],
-            "scripts": []
-          }
+            "scripts": [],
+            "commonChunk": false
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1mb",
+                  "maximumError": "2mb"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "ngx-build-plus:dev-server",
+          "options": {
+            "port": 4202,
+            "extraWebpackConfig": "projects/links-remote/webpack.config.js"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "links-remote:build:production"
+            },
+            "development": {
+              "buildTarget": "links-remote:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "analytics-remote": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss",
+          "skipTests": true
+        },
+        "@schematics/angular:service": {
+          "skipTests": true
+        }
+      },
+      "root": "projects/analytics-remote",
+      "sourceRoot": "projects/analytics-remote/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "ngx-build-plus:browser",
+          "options": {
+            "extraWebpackConfig": "projects/analytics-remote/webpack.config.js",
+            "outputPath": "dist/analytics-remote",
+            "index": "projects/analytics-remote/src/index.html",
+            "main": "projects/analytics-remote/src/main.ts",
+            "polyfills": "zone.js",
+            "tsConfig": "projects/analytics-remote/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [],
+            "styles": [
+              "projects/analytics-remote/src/styles.scss"
+            ],
+            "scripts": [],
+            "commonChunk": false
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "1mb",
+                  "maximumError": "2mb"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "ngx-build-plus:dev-server",
+          "options": {
+            "port": 4203,
+            "extraWebpackConfig": "projects/analytics-remote/webpack.config.js"
+          },
+          "configurations": {
+            "production": {
+              "buildTarget": "analytics-remote:build:production"
+            },
+            "development": {
+              "buildTarget": "analytics-remote:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
+    },
+    "shared-lib": {
+      "projectType": "library",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss",
+          "skipTests": true
+        }
+      },
+      "root": "projects/shared-lib",
+      "sourceRoot": "projects/shared-lib/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/shared-lib/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/shared-lib/tsconfig.lib.json"
+            },
+            "development": {
+              "tsConfig": "projects/shared-lib/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
         }
       }
     }

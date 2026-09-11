@@ -1,7 +1,10 @@
 replicaCount: 2
 
+# MFE-specific values (overridden per deployment)
+mfeName: shell
+
 image:
-  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/frontend
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/frontend-shell
   tag: latest
   pullPolicy: IfNotPresent
 

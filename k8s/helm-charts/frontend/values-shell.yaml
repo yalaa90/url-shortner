@@ -1,0 +1,8 @@
+# Values for the shell (host) MFE
+mfeName: shell
+
+image:
+  repository: 012345678901.dkr.ecr.us-east-1.amazonaws.com/url-shortener/frontend-shell
+  tag: latest
+
+nameOverride: url-shortener-shell
